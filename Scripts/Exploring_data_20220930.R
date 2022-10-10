@@ -1,4 +1,4 @@
-# Date: September 30th 2022
+# Date: September 30th 2022 
 # Author: Joy Kumagai (kumagaij@stanford.edu)
 # Purpose: Exploring Data for Final Project
 # BIO 202: Ecological Statistics
