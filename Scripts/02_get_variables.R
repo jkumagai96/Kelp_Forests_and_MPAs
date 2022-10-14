@@ -156,9 +156,6 @@ depth_r <- rasterize(x = coords,
                fun = mean,
                na.rm = T)
 
-# For some reason the depth data are now truncated to integers and I don't know why
-# Question: Is this ok? 
-
 writeRaster(
   x = depth_r,
   format = "GTiff", 
