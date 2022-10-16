@@ -1,0 +1,32 @@
+The file, "kelp_data_w_mpas.csv" was created by Joy Kumagai (kumagaij@stanford.edu).
+
+The file was transformed from the NetCDF provided by Tom Bell. The name of the file is:
+CAkelpCanopyEnv_2021.nc
+
+The data were first extracted to raster's with the resolution of 1km2, area and biomass 
+were summed, while nitrate, hsmax, and temperature were averaged. 
+
+Then, the data were converted to points, only pixels with data were converted to points. 
+
+These points were then transformed into a long data table, where each variable 
+is a column. PixelID, lon, lat, and depth repeat within the dataset according to year. 
+
+Next, these points were filtered to latitude 37.4, the point where giant kelp are 
+found. 
+
+A file with MPAs within CA (does not include mpas in estuaries or sancutaries) was 
+then intersected with these points. 
+
+--- 
+Therefore, the final dataset has the status (full, partial, or none) and ID of each mpa 
+that intersected a kelp data point. 
+
+Each kelp data also point has the year of the observation, area of kelp, biomass of kelp
+maximum significant wave height (hsmax), nitrate, and temperature. 
+--- 
+
+This read me file will be edited in the future following the development of the project. 
+
+Feel free to contact me with any questions. 
+
+
