@@ -82,7 +82,7 @@ depth <- ncvar_get(
 # Tibble of coordinates
 coords <- tibble(x = lon, y = lat)
 
-# Extract time indicatiors -----------------------------------------------------
+# Extract time indicators -----------------------------------------------------
 year <- ncvar_get(
   nc = all_data,
   varid = "year"
@@ -97,63 +97,56 @@ quarter <- ncvar_get(
 # This section of the code is a for loop which goes through a series of steps 
 # to extract each variable into a raster format averaged by year. 
 
+# We start with just area, as this is the only variable that is summed to 1km2
+# Initialize variables 
+v_years <- year[year >= 2009]
+
+# Create a vector of filenames
+names_new <-
+  paste(
+    "LandsatKelp_Quarterly",
+    "area",
+    unique(v_years),
+    sep = "_"
+  )
+
+# Create a matrix of years we want, where each column is one quarter of data
+
+data_extracted <- area[, year >= 2009] 
+
+# Create a raster brick of quarter-year kelp area 
+k <- rasterize(x = coords,                 
+               y = base_grid,              
+               field = data_extracted,    
+               fun = sum, # only works for area 
+               na.rm = T)
+
+means <- stackApply(k, indices=v_years, fun=mean)
+
+# Export one raster per year 
+writeRaster(
+  x = means,
+  bylayer = T,
+  format = "GTiff", 
+  filename = here::here(
+    "Processed_data",
+    "kelp_variables", 
+    paste0(names_new, ".tif")
+  ), 
+  overwrite = T
+)
+
 # Each loop of the for loop is a different variable. 
 # First, we create file names to export the final rasters, then we extract the 
 # relevant data within the variable into a matrix, we then create a raster brick 
 # of all the data. This raster brick is then averaged by year and exported as a 
 # TIFF file.  
 
-# Area and biomass are summed per quarter of year 
+## Process biomass, nitrate, hsmax, and temperature  variables #################
+# biomass,nitrate, hsmax, and temperature variables are averaged! 
 # Initialize variables 
-v_years <- year[year >= 2009]
-variables <- list(area, biomass)
-var_names <- c("area", "biomass")
-
-# start for loop
-for (i in 1:length(variables)) {
-  
-  # Create a vector of filenames
-  names_new <-
-    paste(
-      "LandsatKelp_Quarterly",
-      var_names[i],
-      unique(v_years),
-      sep = "_"
-    )
-  
-  # Create a matrix of years we want, where each column is one quarter of data
-  
-  data_extracted <- variables[[i]][, year >= 2009] 
-  
-  # Create a raster brick of quarter-year kelp area 
-  k <- rasterize(x = coords,                 
-                 y = base_grid,              
-                 field = data_extracted,    
-                 fun = sum, # only works for area and biomass 
-                 na.rm = T)
-  
-  means <- stackApply(k, indices=v_years, fun=mean)
-
-  # Export one raster per year 
-  writeRaster(
-    x = means,
-    bylayer = T,
-    format = "GTiff", 
-    filename = here::here(
-      "Processed_data",
-      "kelp_variables", 
-      paste0(names_new, ".tif")
-    ), 
-    overwrite = T
-  )
-  
-}
-## Process nitrate, hsmax, and temperature  variables ###########################
-# nitrate, hsmax, and temperature variables are averaged! 
-# Initialize variables 
-v_years <- year[year >= 2009]
-variables <- list(temperature,  nitrate, hsmax)
-var_names <- c("temperature", "nitrate", "hsmax")
+variables <- list(biomass, temperature,  nitrate, hsmax)
+var_names <- c("biomass","temperature", "nitrate", "hsmax")
 
 # start for loop
 for (i in 1:length(variables)) {

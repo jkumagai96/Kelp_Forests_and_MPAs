@@ -14,24 +14,12 @@ station_data <- read.csv("Processed_data/data_tables/PixelID_reference.csv")
 kelp_data <- read.csv("Processed_data/data_tables/kelp_data.csv")
 
 ##### Formatting ###############################################################
-
-# Filter kelp points to latitude 37.4
-kelp_data <- kelp_data %>% 
-  filter(lat <= 37.4)
-
 # Select needed attribuets from MPAs
 mpas <- mpas_original %>% 
-  mutate(mpa_status = replace(Prot_Lvl_1, 
-                          Prot_Lvl_1 == "No Access", 
-                                        "Partial")) %>% # QUESTION CHECK THIS WITH NUR
-  select(Site_ID_12, Estab_Yr_1, AreaMar_12, mpa_status)  %>% # I selected Area_Mar12, and not Area? QUESTION
-  
+  dplyr::select(Site_ID_12, Estab_Yr_1, AreaMar_12, Status_12)  %>% # I selected Area_Mar12, and not Area? QUESTION
+  rename("mpa_status" = "Status_12") %>% 
   # Match projections with kelp data 
   st_transform(crs = 4326) 
-
-# Filter station points to latitude 37.4
-station_data <- station_data %>% 
-  filter(y <= 37.4)
 
 # convert station points into spatial data to intersect with mpas 
 station_points <- st_as_sf(station_data, 
@@ -45,16 +33,14 @@ crs(station_points) == crs(mpas)
 ##### Processing ###############################################################
 # Spatial intersect between mpas and points to get all points within mpas 
 points_in_mpas <- st_intersection(station_points, mpas) %>% 
-  select(PixelID, mpa_status, Site_ID_12) %>% 
-  st_drop_geometry
+  dplyr::select(PixelID, mpa_status, Site_ID_12) %>% 
+  st_drop_geometry()
 
 # Join data with kelp data 
 kelp_w_mpas <- left_join(kelp_data, points_in_mpas, by = "PixelID") 
 
 # Format values of mpa_status so NA is none, no take is full, and uniform multiple use is partial
 kelp_w_mpas$mpa_status[is.na(kelp_w_mpas$mpa_status)] <- "None"
-kelp_w_mpas$mpa_status[kelp_w_mpas$mpa_status == "No Take"] <- "Full"
-kelp_w_mpas$mpa_status[kelp_w_mpas$mpa_status == "Uniform Multiple Use"] <- "Partial"
 
 # Formatting findal data 
 final_data <- kelp_w_mpas %>% 
@@ -63,8 +49,8 @@ final_data <- kelp_w_mpas %>%
   relocate(mpa_status, .after = Mpa_ID)
 
 ##### Export ###################################################################
+
 write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas.csv", row.names = F)
-
-
+# End of script 
 
 

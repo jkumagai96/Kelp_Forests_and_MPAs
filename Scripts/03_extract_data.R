@@ -7,9 +7,9 @@
 
 # Load packages
 library(raster)
-library(tidyverse)
 library(here)
 library(sf)
+library(tidyverse)
 
 ##### Create Pixel ID spatial dataset ##########################################
 # load depth data 
@@ -22,7 +22,9 @@ depth_r <- raster(here(
 # Create points out of depth raster
 depth_p <- rasterToPoints(depth_r) %>% 
   as.data.frame() %>% 
-  mutate(PixelID = 1:nrow(.))
+  filter(y <= 37.4) %>% 
+  mutate(PixelID = 1:nrow(.)) %>% 
+  rename(depth = layer)
 
 # export
 write.csv(depth_p, 
@@ -53,9 +55,10 @@ for (j in 1:length(variables)) {
     # convert to df
     data_yr <- rasterToPoints(r) %>% 
       as.data.frame() %>% 
+      filter(y <= 37.4) %>% 
       mutate(year = years[i],
              PixelID = PixelID) %>% 
-      select(x, y, PixelID, year, layer)
+      dplyr::select(x, y, PixelID, year, layer)
     
     # Adds all the year data together to the bottom of the data frame 
     variable_all <- rbind(variable_all, data_yr) 
@@ -76,8 +79,7 @@ for (j in 1:length(variables)) {
 # Latitude, longitude, Pixel ID, year, area, biomass, hsmax, nitrate, and temperature
 
 # sets up the table with area dataset from the list 
-area <- left_join(kelp_list[[1]], depth_p) %>% 
-  rename("depth" = "layer") 
+area <- left_join(kelp_list[[1]], depth_p) 
 
 # adds each variable to the table 
 biomass <- kelp_list[[2]]$biomass
