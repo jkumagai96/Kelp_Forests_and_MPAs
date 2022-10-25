@@ -11,7 +11,9 @@ library(tidyverse)
 ##### Set up: load data ########################################################
 mpas_original <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp")
 station_data <- read.csv("Processed_data/data_tables/PixelID_reference.csv")
-kelp_data <- read.csv("Processed_data/data_tables/kelp_data.csv")
+# kelp_data <- read.csv("Processed_data/data_tables/kelp_data.csv")
+kelp_data <- read.csv("Processed_data/data_tables/kelp_data_per_quarter.csv")
+
 
 ##### Formatting ###############################################################
 # Select needed attribuets from MPAs
@@ -50,7 +52,9 @@ final_data <- kelp_w_mpas %>%
 
 ##### Export ###################################################################
 
-write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas.csv", row.names = F)
+# write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas.csv", row.names = F)
+write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv", row.names = F)
+
 # End of script 
 
 
