@@ -162,7 +162,7 @@ for (i in 1:length(variables)) {
   k <- rasterize(x = coords,                 
                  y = base_grid,              
                  field = data_extracted,    
-                 fun = mean, # only works for area 
+                 fun = mean, 
                  na.rm = T)
   
   names(k) <- paste0("Q", study_quarters, "_", study_years)
@@ -195,6 +195,3 @@ df <- data_all %>%
 write.csv(df, "Processed_data/data_tables/kelp_data_per_quarter.csv", row.names = F)
 
 # End of script
-
-
-
