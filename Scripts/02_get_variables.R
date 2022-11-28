@@ -99,7 +99,10 @@ quarter <- ncvar_get(
 
 # We start with just area, as this is the only variable that is summed to 1km2
 # Initialize variables 
-v_years <- year[year >= 2009]
+
+# v_years <- year[year >= 2009]
+v_years <- year
+start_year <- 1984
 
 # Create a vector of filenames
 names_new <-
@@ -112,7 +115,7 @@ names_new <-
 
 # Create a matrix of years we want, where each column is one quarter of data
 
-data_extracted <- area[, year >= 2009] 
+data_extracted <- area[, year >= start_year] 
 
 # Create a raster brick of quarter-year kelp area 
 k <- rasterize(x = coords,                 
@@ -162,7 +165,7 @@ for (i in 1:length(variables)) {
   
   # Create a matrix of years we want, where each column is one quarter of data
   
-  data_extracted <- variables[[i]][, year >= 2009] 
+  data_extracted <- variables[[i]][, year >= start_year] 
   
   # Create a raster brick of quarter-year kelp area 
   k <- rasterize(x = coords,                 

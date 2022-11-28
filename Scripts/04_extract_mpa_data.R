@@ -13,7 +13,8 @@ mpas_original <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp")
 station_data <- read.csv("Processed_data/data_tables/PixelID_reference.csv")
 # kelp_data <- read.csv("Processed_data/data_tables/kelp_data.csv")
 kelp_data <- read.csv("Processed_data/data_tables/kelp_data_per_quarter.csv")
-
+human_gravity <- read.csv("Data/Population/human_gravity_for_kelp_patches.csv") %>% 
+  rename(long = lon)
 
 ##### Formatting ###############################################################
 # Select needed attribuets from MPAs
@@ -29,7 +30,7 @@ station_points <- st_as_sf(station_data,
                            crs = 4326) 
 
 # Make sure the projections match 
-crs(station_points) == crs(mpas)
+raster::crs(station_points) == raster::crs(mpas)
 
 
 ##### Processing ###############################################################
@@ -49,6 +50,12 @@ final_data <- kelp_w_mpas %>%
   rename("Mpa_ID" = "Site_ID_12") %>% 
   relocate(Mpa_ID, .after = depth) %>% 
   relocate(mpa_status, .after = Mpa_ID)
+
+##### Add in Human Gravity Index ###############################################
+
+final_data <- final_data %>% 
+  left_join(human_gravity, by = c("long", "lat")) %>%  # NA's are values > 50km
+  mutate(gravity = replace_na(gravity, 0)) # 11% of the data are zero's now 
 
 ##### Export ###################################################################
 

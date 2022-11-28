@@ -21,8 +21,8 @@ SST_load <- function(file_name){
     hyper_tibble() %>% 
     mutate(time_full = as.POSIXct(time, origin = "1970-01-01")) %>% 
     mutate(time_final = format(time_full, format="%Y-%m-%d")) %>% 
-    select(longitude, latitude, time_final, sea_surface_temperature) %>% 
-    dplyr::rename(t = time_final, temp = sea_surface_temperature) %>% 
+    select(longitude, latitude, time_final, sst) %>% 
+    dplyr::rename(t = time_final, temp = sst) %>% 
     rename(lon = longitude, lat = latitude) %>% 
     mutate(t = as.Date(t)) %>% 
     na.omit()
