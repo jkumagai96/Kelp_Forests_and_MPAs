@@ -28,7 +28,7 @@ SST_data %>%
 # Not all days have data every year 
 
 ##### Declare Functions ########################################################
-annual_intensity <- function(df){
+annual_intensity_hw <- function(df){
   # First calculate the climatologies
   clim <- heatwaveR::ts2clm(data = df, climatologyPeriod = c("1985-01-01", "2014-12-31"))
   # Then the events
@@ -36,8 +36,8 @@ annual_intensity <- function(df){
   
   # Return only the annual intensity, mhw events, and mhw days
   mhw$climatology %>% 
-    dplyr::select(-c(doy, threshCriterion, durationCriterion, event)) %>% # Q: seas vs. thresh? 
-    # Define cumulative intensity as only experienced during mhw or just above seasonality?
+    dplyr::select(-c(doy, threshCriterion, durationCriterion, event)) %>% 
+    # Define cumulative intensity as only experienced during mhw 
     drop_na() %>% 
     mutate(year = format(t, "%Y")) %>% 
     mutate(intensity = temp - thresh) %>% 
@@ -50,15 +50,51 @@ annual_intensity <- function(df){
     )
 }
 
-##### Calculate Heatwaves ######################################################
+
+annual_intensity_cold_spells <- function(df){
+  # First calculate the climatologies
+  clim <- heatwaveR::ts2clm(data = df, climatologyPeriod = c("1985-01-01", "2014-12-31"), pctile = 10)
+  # Then the events
+  cs <- detect_event(data = clim, coldSpells = TRUE)
+  
+  # Return only the annual intensity, cold spell events, and cold spell days
+  cs$climatology %>% 
+    dplyr::select(-c(doy, threshCriterion, durationCriterion, event)) %>% 
+    # Define cumulative intensity as only experienced during cold spell 
+    drop_na() %>% 
+    mutate(year = format(t, "%Y")) %>% 
+    mutate(intensity = temp - thresh) %>% 
+    group_by(year) %>%
+    summarise(
+      cs_events = length(unique(event_no)),
+      cs_days = length(t),
+      cs_int_cumulative = sum(intensity),
+      .groups = "drop"
+    )
+}
+
+##### Calculate Heatwaves and Cold Spells ######################################
+### Heatwaves
 MHW_df <- SST_data %>% 
   # Then we group the data by the 'lon' and 'lat' columns
   group_by(lon, lat) %>% 
   # Then we run our MHW detecting function on each group
-  group_modify(~annual_intensity(.x)) %>% 
+  group_modify(~annual_intensity_hw(.x)) %>% 
   ungroup()
+
+### Cold spells
+CS_df <- SST_data %>% 
+  # Then we group the data by the 'lon' and 'lat' columns
+  group_by(lon, lat) %>% 
+  # Then we run our MHW detecting function on each group
+  group_modify(~annual_intensity_cold_spells(.x)) %>% 
+  ungroup()
+
 
 ##### Export ###################################################################
 saveRDS(object = MHW_df,
         file = "Processed_data/SST/MHW_1984_2021.rds")
+
+saveRDS(object = CS_df,
+        file = "Processed_data/SST/CS_1984_2021.rds")
 

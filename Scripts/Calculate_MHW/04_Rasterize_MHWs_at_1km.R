@@ -1,6 +1,6 @@
 # Date: November 23rd 2022
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
-# Purpose: Rasterize MHWs and downsample
+# Purpose: Rasterize MHWs, Cold spells and downsample
 # BIO 202: Ecological Statistics
 
 ##### Set up ###################################################################
@@ -10,8 +10,11 @@ library(raster)
 
 # load data
 MHW_df <- readRDS("Processed_data/SST/MHW_1984_2021.rds")
+CS_df <- readRDS("Processed_data/SST/CS_1984_2021.rds")
 base_grid <- raster("Data/standard_grid.tif")
 
+# First we will go through formatting, processing, and exporting for marine heat
+# waves, then the last section will do the same process for cold spells.
 ##### Format data ##############################################################
 MHW_intensity <- MHW_df %>% 
   arrange(year) %>% 
@@ -42,3 +45,35 @@ final_MHW_data <- MHW_001_table %>%
 ##### Export ###################################################################
 saveRDS(object = final_MHW_data,
         file = "Processed_data/SST/MHW_cummulative_intensity_1km.rds")
+
+
+##### Format data ##############################################################
+CS_intensity <- CS_df %>% 
+  arrange(year) %>% 
+  dplyr::select(-c(cs_events, cs_days)) %>% # Filter data
+  pivot_wider(names_from = year,
+              values_from = cs_int_cumulative) # rasterfrom XYZ requires wide data
+
+
+##### Cold seplls ##############################################################
+# Step 1: Create cold spells rasters at 0.25 degree grid
+CS_025_grid <- rasterFromXYZ(CS_intensity, 
+                              crs = 4326) 
+
+# Step 2: Downsample to base_grid 
+CS_001_grid <- disaggregate(CS_025_grid, fact = 25)
+
+# Step 3: Create table that can be joined by lat long
+CS_001_table <- rasterToPoints(CS_001_grid) %>% 
+  as.data.frame() %>% 
+  mutate_all(~replace(., is.na(.), 0)) # Set NAs to zero where there was no MHWs detected
+
+# Format final data 
+final_CS_data <- CS_001_table %>% 
+  rename("long" = x, "lat" = y) %>% 
+  pivot_longer(cols = X1984:X2021, names_to = "year", values_to = "MHW_cummulative") %>% 
+  mutate(year = substring(year, 2))
+
+##### Export ###################################################################
+saveRDS(object = final_CS_data,
+        file = "Processed_data/SST/CS_cummulative_intensity_1km.rds")
