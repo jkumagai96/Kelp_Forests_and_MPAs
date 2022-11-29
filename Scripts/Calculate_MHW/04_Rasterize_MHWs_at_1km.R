@@ -43,19 +43,20 @@ final_MHW_data <- MHW_001_table %>%
   mutate(year = substring(year, 2))
 
 ##### Export ###################################################################
+# Export tif to visualize in QGIS 
+writeRaster(MHW_001_grid, "Processed_data/SST/MHW_cummulative_intensity_1km.tif") 
+
 saveRDS(object = final_MHW_data,
         file = "Processed_data/SST/MHW_cummulative_intensity_1km.rds")
 
 
-##### Format data ##############################################################
+##### Cold Spells ##############################################################
 CS_intensity <- CS_df %>% 
   arrange(year) %>% 
   dplyr::select(-c(cs_events, cs_days)) %>% # Filter data
   pivot_wider(names_from = year,
               values_from = cs_int_cumulative) # rasterfrom XYZ requires wide data
 
-
-##### Cold seplls ##############################################################
 # Step 1: Create cold spells rasters at 0.25 degree grid
 CS_025_grid <- rasterFromXYZ(CS_intensity, 
                               crs = 4326) 
@@ -66,14 +67,13 @@ CS_001_grid <- disaggregate(CS_025_grid, fact = 25)
 # Step 3: Create table that can be joined by lat long
 CS_001_table <- rasterToPoints(CS_001_grid) %>% 
   as.data.frame() %>% 
-  mutate_all(~replace(., is.na(.), 0)) # Set NAs to zero where there was no MHWs detected
+  mutate_all(~replace(., is.na(.), 0)) # Set NAs to zero where there was no cold spells are detected
 
 # Format final data 
 final_CS_data <- CS_001_table %>% 
   rename("long" = x, "lat" = y) %>% 
-  pivot_longer(cols = X1984:X2021, names_to = "year", values_to = "MHW_cummulative") %>% 
+  pivot_longer(cols = X1984:X2021, names_to = "year", values_to = "CS_cummulative") %>% 
   mutate(year = substring(year, 2))
 
-##### Export ###################################################################
 saveRDS(object = final_CS_data,
         file = "Processed_data/SST/CS_cummulative_intensity_1km.rds")

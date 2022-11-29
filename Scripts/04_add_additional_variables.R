@@ -1,6 +1,8 @@
-# Date: October 16th 2022
-# Author: Joy Kumagai (kumagaij@stanford.edu) 
-# Purpose: Create a data table with MPA protection per point with kelp data
+# Date: November 28th 2022
+# Author: Joy A. Kumagai (kumagaij@stanford.edu)
+# Purpose: Create a data table with additional variables including, MPA 
+#          protection, human gravity index, and marine heat waves and cold spells 
+#          per point with kelp data.
 # BIO 202: Ecological Statistics
 
 ##### Set up: packages #########################################################
@@ -11,10 +13,18 @@ library(tidyverse)
 ##### Set up: load data ########################################################
 mpas_original <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp")
 station_data <- read.csv("Processed_data/data_tables/PixelID_reference.csv")
-# kelp_data <- read.csv("Processed_data/data_tables/kelp_data.csv")
 kelp_data <- read.csv("Processed_data/data_tables/kelp_data_per_quarter.csv")
 human_gravity <- read.csv("Data/Population/human_gravity_for_kelp_patches.csv") %>% 
   rename(long = lon)
+
+# Marine heatwaves and cold spells 
+cold_spells <- readRDS("Processed_data/SST/CS_cummulative_intensity_1km.rds") %>% 
+  filter(lat <= 37.4) %>% 
+  filter(long >= -122.5)
+
+heat_waves <- readRDS("Processed_data/SST/MHW_cummulative_intensity_1km.rds") %>% 
+  filter(lat <= 37.4) %>% 
+  filter(long >= -122.5)
 
 ##### Formatting ###############################################################
 # Select needed attribuets from MPAs
@@ -57,11 +67,27 @@ final_data <- final_data %>%
   left_join(human_gravity, by = c("long", "lat")) %>%  # NA's are values > 50km
   mutate(gravity = replace_na(gravity, 0)) # 11% of the data are zero's now 
 
+##### Add in marine heat wave and cold spells ##################################
+
+# Format marine heat wave and cold spell data 
+temp_anon <- cbind(heat_waves, cold_spells$CS_cummulative) %>% 
+  rename(CS_intensity = "cold_spells$CS_cummulative",
+         MHW_intensity = "MHW_cummulative") %>%  
+  mutate(year = as.integer(year))
+
+# Join temperature anonmoly data by long, lat and year
+final_data <- final_data %>% 
+  left_join(temp_anon, by = c("long", "lat", "year"))
+
+# How many cells did not join 
+n_na <- final_data %>% filter(is.na(MHW_intensity)) %>% nrow()
+total <- nrow(final_data)
+
+n_na/total*100 # 10.8% of the data are NAs now 
+
 ##### Export ###################################################################
 
-# write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas.csv", row.names = F)
-write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv", row.names = F)
+write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv", 
+          row.names = F)
 
 # End of script 
-
-
