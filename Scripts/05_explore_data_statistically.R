@@ -1,4 +1,4 @@
-# Date: October 16th 2022
+# Date: November 28th 2022
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Explore data statistically
 # BIO 202: Ecological Statistics
@@ -10,7 +10,7 @@ library(GGally)
 library(ggeffects)
 
 # Load data 
-data <- read.csv("Processed_data/data_tables/kelp_data_w_mpas.csv")
+data <- read.csv("Processed_data/data_tables/kelp_data_all_variables_per_year.csv")
 
 ##### Explore covariates #######################################################
 # Explore each variable with time
@@ -25,7 +25,7 @@ data %>%
 # Mean across year 
 data %>% 
   group_by(year) %>% 
-  summarize(area_m = mean(area)) %>% 
+  summarize(area_m = mean(area, na.rm = T)) %>% 
   ggplot(aes(x = year, y = area_m)) +
   geom_point()
 
@@ -44,8 +44,6 @@ data %>%
   geom_point()
 
 # follows area, we will need to remove biomass 
-
-# Should we use biomass or area?
 
 ## Temperature
 # Across year 
@@ -69,11 +67,25 @@ data %>%
 hist(data$hsmax) # non-normal distribution (right side tail)
 hist(sqrt(data$hsmax)) # Square root transformation does a good job of normalizing the data 
 
+## Temperature anonomolies 
+hist(data$MHW_intensity)
+hist(data$CS_intensity)
 
 ##### Explore correlations between the variables ###############################
 
-data2 <- data %>% dplyr::select(year, area, biomass, nitrate, temperature, hsmax, depth)
+data2 <- data %>% dplyr::select(area, biomass, nitrate, #year,
+                                temperature, hsmax, depth, 
+                                gravity, MHW_intensity, CS_intensity)
+# Removed year as it was too much for the computer 
+
+png("Figures/correlations_plot.png", 
+    res = 300, 
+    width = 10, 
+    height = 10, 
+    units = "in")
+
 GGally::ggpairs(data2)
+dev.off()
 
 # area and biomass are highly correlated (0.665)
 # Nitrate and temperature are super highly correlated, use temperature 
@@ -84,9 +96,6 @@ data %>%
   ggplot(aes(x = temperature, y  = nitrate)) +
   geom_point()
 
-
-# Shorten data to just variables we can use
-data_short <- data %>% select(year, area, temperature, hsmax, depth, mpa_status) 
 
 data %>% 
   ggplot(aes(x = year, y = temperature)) +
