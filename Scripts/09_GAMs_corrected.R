@@ -155,42 +155,6 @@ summary(m6$lme)
 # A smoother on temperature did not increase R2 by much, and it is very linear 
 # so I will not add this to the model 
 
-# Consider how much the model is improved with mpa_status added
-# need to filter data to 2012 to do this 
-data_decade <- kelp_data %>% 
-  filter(year >= 2012) %>% 
-  filter(log_area != 0) %>% 
-  dplyr::select(-c(nitrate, 
-                   biomass, 
-                   Mpa_ID)) %>% 
-  drop_na() # some cells with area and temperature are missing
-
-# MPA status is not included
-mA <- mgcv::gamm(
-  log_area ~ s(lat, k = 50, bs = "gp", m = c(3, .1)) +
-    s(long, k = 50, bs = "gp", m = c(3,.1)) +
-    temperature + hsmax + MHW_intensity + CS_intensity + depth, 
-  data = data_decade,
-  correlation = corAR1(form = ~ year | PixelID)
-)
-
-# Add MPA_status as predictor
-mB <- mgcv::gamm(
-  log_area ~ s(lat, k = 50, bs = "gp", m = c(3, .1)) +
-    s(long, k = 50, bs = "gp", m = c(3,.1)) +
-    temperature + hsmax + MHW_intensity + CS_intensity + depth + mpa_status, 
-  data = data_decade,
-  correlation = corAR1(form = ~ year | PixelID)
-)
-
-summary(mA$gam)
-summary(mA$lme)
-summary(mB$gam)
-summary(mB$lme)
-
-# Including the mpa_status improved the estimates by .5%, reaching to the model 
-# explaining 20.3% of the variance
-
 # Fix the range parameter (based on outcomes lower in the script)
 mC <- mgcv::gamm(
   log_area ~ s(lat, k = 50, bs = "gp", m = c(3, .02)) +
@@ -229,10 +193,10 @@ summary(m5_b$gam)
 plot(m5_b$gam)
 summary(m5_b$lme)
 
-# BEST MODEL SO FAR! :) 
+# BEST MODEL SO FAR! :) Adjusted k parameter as well
 m5_c <- mgcv::gamm(
-  log_area ~ s(lat, k = 50, bs = "gp", m = c(3, .02)) +
-    s(long, k = 50, bs = "gp", m = c(3,.02)) +
+  log_area ~ s(lat, k = 100, bs = "gp", m = c(3, .02)) +
+    s(long, k = 100, bs = "gp", m = c(3,.02)) +
     temperature + hsmax + MHW_intensity + CS_intensity + depth + gravity, 
   data = data,
   correlation = corAR1(form = ~ year | PixelID)
@@ -392,8 +356,13 @@ plot(model_binom9$gam)
 ##### Compare Model Predictions within MPAs in figures #########################
 
 # Obtain model predictions for combined estimates
-data_in_mpas$fitted_area <- predict(model_binom8$gam, newdata = data_in_mpas, type = "response") * 
+
+binomial_prediction <-  predict(model_binom8$gam, newdata = data_in_mpas, type = "response") 
+binary_prediction <- ifelse(binomial_prediction > .5, 1, 0)
+
+data_in_mpas$fitted_area <- binary_prediction *
   exp(predict(m5_c$gam, newdata = data_in_mpas) + 1)
+
 
 # Compare fitted vs. actual area values
 data_in_mpas %>% 
@@ -449,3 +418,99 @@ ggsave(last_plot(),
        height = 5,
        units = "in", 
        dpi = 300)
+
+
+##### Run Full Models from 2012 to 2021 w/ all data ############################
+# Consider how much the model is improved with mpa_status added
+# need to filter data to 2012 to do this 
+data_decade <- kelp_data %>% 
+  filter(year >= 2012) %>% 
+  filter(log_area != 0) %>% 
+  dplyr::select(-c(nitrate, 
+                   biomass, 
+                   Mpa_ID)) %>% 
+  drop_na() # some cells with area and temperature are missing
+
+# MPA status is included
+mA <- mgcv::gamm(
+  log_area ~ s(lat, k = 50, bs = "gp", m = c(3, .02)) +
+    s(long, k = 50, bs = "gp", m = c(3,.02)) +
+    temperature + hsmax + MHW_intensity + CS_intensity + depth + mpa_status, 
+  data = data_decade,
+  correlation = corAR1(form = ~ year | PixelID)
+)
+# removed gravity
+
+summary(mA$gam)
+summary(mA$lme)
+
+# adjusted range parameter to 0.03 and 0.04, not better... 
+
+
+# Adjust K parameter, big improvement!
+mB <- mgcv::gamm(
+  log_area ~ s(lat, k = 100, bs = "gp", m = c(3, .02)) +
+    s(long, k = 100, bs = "gp", m = c(3,.02)) +
+    temperature + hsmax + MHW_intensity + CS_intensity + depth + mpa_status, 
+  data = data_decade,
+  correlation = corAR1(form = ~ year | PixelID)
+)
+# removed gravity
+
+summary(mB$gam)
+summary(mB$lme)
+plot(mB$gam)
+
+# mB is best! 
+
+
+# Binomial Model next!
+data_decade_binomial <- kelp_data %>% 
+  filter(year >= 2012) %>% 
+  dplyr::select(-c(nitrate, 
+                   biomass, 
+                   Mpa_ID)) %>% 
+  mutate(kelp_present = ifelse(area == 0, 0, 1)) %>% 
+  drop_na() # some cells with area and temperature are missing
+
+model_binom_A <- mgcv::gamm(
+  kelp_present ~ s(lat, k = 20, bs = "gp", m = c(3, .03)) + 
+    s(long, k = 20, bs = "gp", m = c(3,.03)) + 
+    temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity + mpa_status,
+  data = data_decade_binomial,
+  family = binomial(link = "logit"),
+  correlation = corAR1(form = ~ year | PixelID)
+)
+
+summary(model_binom_A$gam)
+summary(model_binom_A$lme)
+plot(model_binom_A$gam)
+
+model_binom_B <- mgcv::gamm(
+  kelp_present ~ s(lat, k = 20, bs = "gp", m = c(3, .03)) + 
+    s(long, k = 20, bs = "gp", m = c(3,.03)) + 
+    temperature + hsmax + depth + MHW_intensity + mpa_status, # removed gravity and CS_intensity
+  data = data_decade_binomial,
+  family = binomial(link = "logit"),
+  correlation = corAR1(form = ~ year | PixelID)
+)
+
+summary(model_binom_B$gam)
+summary(model_binom_B$lme)
+plot(model_binom_B$gam)
+
+model_binom_C <- mgcv::gamm(
+  kelp_present ~ s(lat, k = 50, bs = "gp", m = c(3, .03)) + # adjusted k parameter
+    s(long, k = 50, bs = "gp", m = c(3,.03)) + 
+    temperature + hsmax + depth + MHW_intensity + mpa_status,
+  data = data_decade_binomial,
+  family = binomial(link = "logit"),
+  correlation = corAR1(form = ~ year | PixelID)
+)
+
+summary(model_binom_C$gam)
+summary(model_binom_C$lme)
+plot(model_binom_C$gam)
+
+# R2 value is .202
+
