@@ -463,6 +463,20 @@ plot(mB$gam)
 
 # mB is best! 
 
+mC <- mgcv::gamm(
+  log_area ~ s(lat, k = 100, bs = "gp", m = c(3, .02)) +
+    s(long, k = 100, bs = "gp", m = c(3,.02)) +
+    temperature + hsmax + MHW_intensity + CS_intensity + depth + mpa_status + mpa_status*MHW_intensity, 
+  data = data_decade,
+  correlation = corAR1(form = ~ year | PixelID)
+)
+# removed gravity as it was not sigfniciant
+
+summary(mC$gam)
+summary(mC$lme)
+# adding the interaction is not significant! Model B is best  
+# Tried to add smoothers to temperature and hsmax seperately and found a pretty linear
+# trend so I removed them even though they were significant 
 
 # Binomial Model next!
 data_decade_binomial <- kelp_data %>% 
@@ -476,7 +490,7 @@ data_decade_binomial <- kelp_data %>%
 model_binom_A <- mgcv::gamm(
   kelp_present ~ s(lat, k = 20, bs = "gp", m = c(3, .03)) + 
     s(long, k = 20, bs = "gp", m = c(3,.03)) + 
-    temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity + mpa_status,
+    temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity + mpa_status + mpa_status*MHW_intensity,
   data = data_decade_binomial,
   family = binomial(link = "logit"),
   correlation = corAR1(form = ~ year | PixelID)
@@ -489,7 +503,7 @@ plot(model_binom_A$gam)
 model_binom_B <- mgcv::gamm(
   kelp_present ~ s(lat, k = 20, bs = "gp", m = c(3, .03)) + 
     s(long, k = 20, bs = "gp", m = c(3,.03)) + 
-    temperature + hsmax + depth + MHW_intensity + mpa_status, # removed gravity and CS_intensity
+    temperature + hsmax + depth + MHW_intensity + mpa_status + mpa_status*MHW_intensity, # removed gravity and CS_intensity
   data = data_decade_binomial,
   family = binomial(link = "logit"),
   correlation = corAR1(form = ~ year | PixelID)
@@ -499,6 +513,7 @@ summary(model_binom_B$gam)
 summary(model_binom_B$lme)
 plot(model_binom_B$gam)
 
+# Removed interaction between MHW_intensity and mpa_status 
 model_binom_C <- mgcv::gamm(
   kelp_present ~ s(lat, k = 50, bs = "gp", m = c(3, .03)) + # adjusted k parameter
     s(long, k = 50, bs = "gp", m = c(3,.03)) + 
@@ -513,4 +528,67 @@ summary(model_binom_C$lme)
 plot(model_binom_C$gam)
 
 # R2 value is .202
+
+##### Run Models for up to 2015 not including points in MPAs ###################
+# Dataset we will use to model with log gaussian GAM
+data_up_to_2015 <- kelp_data %>% 
+  # filter(year >= 2012) %>% 
+  # Explore modeling kelp area with protected areas, if so you need to filter to 2012
+  
+  filter(mpa_status == "None") %>% 
+  filter(log_area != 0) %>% 
+  filter(year <= 2015) %>% 
+  dplyr::select(-c(nitrate, 
+                   biomass, 
+                   Mpa_ID)) %>% 
+  drop_na() # some cells with area and temperature are missing
+
+# Dataset we will use to model kelp presence absence
+data_binary_up_to_2015 <- kelp_data %>%
+  filter(mpa_status == "None") %>% 
+  filter(year <= 2015) %>% 
+  dplyr::select(-c(nitrate, 
+                   biomass, 
+                   Mpa_ID)) %>% 
+  drop_na() %>%  # some cells with area and temperature are missing
+  mutate(kelp_present = ifelse(area == 0, 0, 1))
+
+# Models
+m2015_1 <- mgcv::gamm(
+  log_area ~ s(lat, k = 100, bs = "gp", m = c(3, .02)) +
+    s(long, k = 100, bs = "gp", m = c(3, .02)) +
+    temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity, 
+  data = data_up_to_2015,
+  correlation = corAR1(form = ~ year | PixelID)
+)
+summary(m2015_1$gam)
+summary(m2015_1$lme)
+plot(m2015_1$gam)
+
+
+m2015_b_1 <- mgcv::gamm(
+  kelp_present ~ s(lat, k = 20, bs = "gp", m = c(3, .03)) + 
+    s(long, k = 20, bs = "gp", m = c(3,.03)) + 
+    temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity,
+  data = data_binary_up_to_2015,
+  family = binomial(link = "logit"),
+  correlation = corAR1(form = ~ year | PixelID)
+)
+
+summary(m2015_b_1$gam)
+summary(m2015_b_1$lme)
+plot(m2015_b_1$gam)
+
+m2015_b_2 <- mgcv::gamm(
+  kelp_present ~ s(lat, k = 20, bs = "gp", m = c(3, .03)) + 
+    s(long, k = 20, bs = "gp", m = c(3,.03)) + 
+    hsmax + depth + MHW_intensity + CS_intensity,
+  data = data_binary_up_to_2015,
+  family = binomial(link = "logit"),
+  correlation = corAR1(form = ~ year | PixelID)
+)
+
+summary(m2015_b_2$gam)
+summary(m2015_b_2$lme)
+plot(m2015_b_2$gam)
 

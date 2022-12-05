@@ -106,6 +106,11 @@ for (i in 1:length(years)) {
   
 }
 
+0.05/30
+
+# New P Value: 0.001666667
+
+final_results >= 0.001666667
 ##### Export ###################################################################
 final_results
 
@@ -217,6 +222,7 @@ for (i in 1:length(years)) {
 }
 
 final_results_1985_1994
+final_results_1985_1994 >= 0.001666667
 
 
 write.csv(final_results_1985_1994, 
