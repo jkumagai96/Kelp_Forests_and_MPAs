@@ -46,7 +46,7 @@ raster::crs(station_points) == raster::crs(mpas)
 ##### Processing ###############################################################
 # Spatial intersect between mpas and points to get all points within mpas 
 points_in_mpas <- st_intersection(station_points, mpas) %>% 
-  dplyr::select(PixelID, mpa_status, Site_ID_12) %>% 
+  dplyr::select(PixelID, mpa_status, Site_ID_12, Estab_Yr_1, AreaMar_12) %>% 
   st_drop_geometry()
 
 # Join data with kelp data 
@@ -55,11 +55,37 @@ kelp_w_mpas <- left_join(kelp_data, points_in_mpas, by = "PixelID")
 # Format values of mpa_status so NA is none, no take is full, and uniform multiple use is partial
 kelp_w_mpas$mpa_status[is.na(kelp_w_mpas$mpa_status)] <- "None"
 
-# Formatting findal data 
-final_data <- kelp_w_mpas %>% 
+not_protected <-kelp_w_mpas %>% 
+  filter(mpa_status == "None") %>% 
+  arrange(PixelID)
+
+subset <- kelp_w_mpas %>% 
+  filter(mpa_status != "None")
+
+for (i in 1:nrow(subset)) {
+  status <- subset$mpa_status[i]
+  establishment_yr <- subset$Estab_Yr_1[i]
+  
+  if (subset$year[i] >= establishment_yr) {
+    subset$mpa_status[i] <- status
+  } else {
+    subset$mpa_status[i] <- "None"
+    subset$AreaMar_12[i] <- 0
+  }
+}
+
+subset <- subset %>% arrange(PixelID)
+
+kelp_w_mpas_adjusted <- rbind(not_protected, subset)
+
+# Formatting final data 
+final_data <- kelp_w_mpas_adjusted %>% 
   rename("Mpa_ID" = "Site_ID_12") %>% 
+  rename("mpa_area" = "AreaMar_12") %>% 
   relocate(Mpa_ID, .after = depth) %>% 
-  relocate(mpa_status, .after = Mpa_ID)
+  relocate(mpa_status, .after = Mpa_ID) %>% 
+  relocate(mpa_area, .after = mpa_status) %>% 
+  select(-Estab_Yr_1)
 
 ##### Add in Human Gravity Index ###############################################
 

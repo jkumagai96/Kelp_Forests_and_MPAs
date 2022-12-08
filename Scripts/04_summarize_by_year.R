@@ -20,18 +20,22 @@ kelp_data_yr <- all_kelp_data %>%
             nitrate = mean(nitrate, na.rm = T),
             temperature = mean(temperature, na.rm = T),
             MHW_intensity = first(MHW_intensity), # same value for all quarters as it was calculated by year
-            CS_intensity = first(CS_intensity))  # same value for all quarters 
+            CS_intensity = first(CS_intensity), # same value for all quarters 
+            mpa_status = first(mpa_status), # same value for all quarters 
+            mpa_area = first(mpa_area))  # same value for all quarters 
+
+kelp_data_yr$mpa_area[is.na(kelp_data_yr$mpa_area)] <- 0
 
 # Subset the position details from the original data (mpa status, lat, long, Pixel ID, human gravity, and depth)
 subset <- all_kelp_data %>% 
-  dplyr::select(long, lat, PixelID, depth, gravity, Mpa_ID, mpa_status) %>% 
-  slice_head(n = length(unique(all_kelp_data$PixelID)))
+  dplyr::select(long, lat, PixelID, depth, gravity, Mpa_ID) %>% 
+  unique(.) %>% 
+  arrange(PixelID)
 
 # Add this information back in
-kelp_data_yr <- left_join(kelp_data_yr, subset, by = "PixelID") %>% 
-  ungroup()
+final <- left_join(kelp_data_yr, subset, by = "PixelID") 
 
 ##### Export ###################################################################
 
-write.csv(kelp_data_yr, "Processed_data/data_tables/kelp_data_all_variables_per_year.csv", 
+write.csv(final, "Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv", 
           row.names = F)

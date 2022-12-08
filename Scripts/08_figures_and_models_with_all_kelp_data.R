@@ -8,39 +8,25 @@
 library(tidyverse)
 library(cowplot)
 library(nlme)
+library(mgcv)
 
 # Load Data
-all_kelp_data <- read.csv("Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv")
+kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
 
 ###### Data Manipulation and formating #########################################
-# Summarize by year
-kelp_data_yr <- all_kelp_data %>% 
-  group_by(PixelID, year) %>% 
-  summarize(area = mean(area, na.rm = T),
-         biomass = mean(biomass, na.rm = T),
-         hsmax = mean(hsmax, na.rm = T),
-         nitrate = mean(nitrate, na.rm = T),
-         temperature = mean(temperature, na.rm = T)) 
-
-# Subset the position details from the original data (mpa status, lat, long, Pixel ID, human gravity, and depth)
-subset <- all_kelp_data %>% 
-  dplyr::select(long, lat, PixelID, depth, gravity, Mpa_ID, mpa_status) %>% 
-  slice_head(n = length(unique(all_kelp_data$PixelID)))
-
-# Add this information back in
-kelp_data_yr <- left_join(kelp_data_yr, subset, by = "PixelID") %>% 
-  ungroup()
+# Remove rows that are NA for MHW and CS (eventually needs to be corrected)
+kelp_data <- kelp_data_all[!is.na(kelp_data_all$MHW_intensity), ]
 
 # Transform area
-kelp_data_yr$log_area <- log(kelp_data_yr$area + 1)
+kelp_data$log_area <- log(kelp_data$area + 1)
 
 # Create dataset with MPA points removed 
-kelp_data_unprotected <- kelp_data_yr %>% 
+kelp_data_unprotected <- kelp_data %>% 
   filter(mpa_status == "None")
 
 # What percent of the data are points in Mpas? 
-1 - nrow(kelp_data_unprotected)/nrow(kelp_data_yr) # 15.57%, Full is 10.66%, 4.91% is partial 
-# 84.42% of the data are not within Mpas. 
+1 - nrow(kelp_data_unprotected)/nrow(kelp_data) 
+# 93% of the data are not within Mpas. 
 
 
 ##### Create figures ###########################################################
@@ -50,7 +36,7 @@ mhw <- rep(0, 38)
 mhw[c(14,15, 31, 32, 33)] <- 1
 
 # Number of zero's per time 
-plot1 <- kelp_data_yr %>% 
+plot1 <- kelp_data %>% 
   group_by(year) %>% 
   summarize(n_zeros = sum(area == 0, na.rm = T)) %>% 
   mutate(heatwave = as.factor(mhw)) %>% 
@@ -63,6 +49,8 @@ plot1 <- kelp_data_yr %>%
     labs(y = "Number of zeros", x = "Year") +
     scale_color_manual(values=c("#0F4392", "#DD1717")) +
     scale_fill_manual(values=c("#0F4392", "#DD1717"))
+
+kelp_data_yr <- kelp_data
 
 # Total area per time 
 plot2 <- kelp_data_yr %>% 
@@ -132,22 +120,29 @@ plot_grid(plot3, plot4, labels = "auto")
 plot_grid(plot4, plot4_median, labels = "auto")
 
 ##### Figures - Box plots per year #############################################
-kelp_data_yr$mpa_status <- factor(kelp_data_yr$mpa_status, levels = c("None", "Partial", "Full"))
-kelp_data_yr <- kelp_data_yr %>% 
-  mutate(hw = if_else(year > 2013, "during", "after")) %>% 
-  mutate(hw = if_else(year > 2016, "after", hw)) %>% 
-  mutate(hw = if_else(year < 2014, "before", hw)) 
+kelp_data$mpa_status <- factor(kelp_data$mpa_status, levels = c("None", "Partial", "Full"))
+kelp_data <- kelp_data %>% 
+  mutate(hw = if_else(year > 2013, "2014-2015", "2016-2021")) %>% 
+  mutate(hw = if_else(year > 2015, "2016-2021", hw)) %>% 
+  mutate(hw = if_else(year < 2014, "2008-2013", hw)) 
 
 # My favorite plot
-plot5 <- kelp_data_yr %>% 
-  filter(year >= 2012) %>% 
+plot5 <- kelp_data %>% 
+  filter(year >= 2008) %>% 
   group_by(year, mpa_status, hw) %>% 
   summarize(mean_area = mean(area, na.rm = T)) %>%
-  ggplot(aes(x = mpa_status, y = mean_area, color = factor(hw, levels = c("before", "during", "after")))) + 
+  ggplot(aes(x = mpa_status, y = mean_area, color = factor(hw, levels = c("2008-2013", "2014-2015", "2016-2021")))) + 
   geom_boxplot(lwd = 1) + 
   theme_bw() +
+  #theme(legend.position="bottom") +
   scale_color_manual(values = c("#440154FF","#FE6E00", "#2A788EFF")) +
-  labs(y = "Mean Kelp Area (m2)", x = "MPA Category", color = "Heatwave") 
+  labs(y = "Mean Kelp Area (m2)", x = "MPA Category", color = "") 
+
+ggsave(last_plot(), filename = "Figures/Before_during_after_heatwave.png",
+       dpi = 600,
+       units = "in",
+       height = 5,
+       width = 8)
 
 ##### Models of kelp area without points in  MPAs ##############################
 data <- kelp_data_unprotected %>% 
@@ -247,9 +242,118 @@ MGlmm2 <- glmer(log_area ~ temperature + hsmax + depth + gravity +
                   (1 | PixelID),
                 family = "gaussian", 
                 data = data) 
-# This fit a linear mixed effect model? 
 
-# What other variables do you want to throw in there?
-# Slope, marine heat wave days, marine cold snap days?
+##### Fit Models with GLMs and GLMMs ###########################################
+data <- kelp_data_unprotected %>% 
+  select(-Mpa_ID, -mpa_status) %>% 
+  drop_na()
 
 
+glm1 <- glm(round(area) ~ temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity,
+            data = data,
+            family = "quasipoisson")
+summary(glm1)
+
+library(MASS)
+
+glm2 <- glm.nb(round(area) ~ temperature + hsmax + depth + gravity + MHW_intensity + CS_intensity,
+            data = data)
+summary(glm2)
+
+library(lme4)
+glme1 <- glmer(round(area) ~ temperature + hsmax + depth + 
+                             gravity + MHW_intensity + CS_intensity +
+                            (1|PixelID),
+               data = data, 
+               family = "quasipoisson")
+summary(glme1)
+
+
+# For some reason gamma does not allow zeros?
+glme2 <- glmer(area ~ temperature + hsmax + depth + # failing to work
+                 gravity + MHW_intensity + CS_intensity +
+                 (1|PixelID),
+               data = data_no_zeros, 
+               family = "Gamma")
+
+glm3 <- glm(log_area ~ temperature + hsmax + depth + 
+                 gravity + MHW_intensity + CS_intensity,
+               data = data_no_zeros, 
+               family = "Gamma")
+summary(glm3)
+
+
+
+lme1 <- lme(log_area ~ temperature + hsmax + depth + gravity + 
+              MHW_intensity + CS_intensity +
+              long + lat,
+    random = ~1 + hsmax|PixelID,
+    method = "ML",
+    data = data)
+
+summary(lme1)
+
+# Drop Gravity
+lme2 <- lme(log_area ~ temperature + hsmax + depth + 
+              MHW_intensity + CS_intensity +
+              long + lat,
+            random = ~1 + hsmax|PixelID,
+            method = "ML",
+            data = data)
+
+summary(lme2)
+
+lme3 <- lme(log_area ~ temperature + hsmax +
+              MHW_intensity + CS_intensity +
+              long + lat,
+            random = ~1 + hsmax|PixelID,
+            method = "ML",
+            data = data)
+
+summary(lme3)
+
+AIC(lme1, lme2, lme3)
+
+residuals <- resid(lme3)
+hist(residuals)
+plot(lme3)
+
+###### Fit Figures without zeros
+# Remove zeros
+data_no_zeros <- data %>% 
+  filter(log_area != 0)
+
+lme1_nz <- lme(log_area ~ temperature + hsmax + depth + gravity + 
+              MHW_intensity + CS_intensity +
+              long + lat,
+            random = ~1 + hsmax|PixelID,
+            method = "ML",
+            data = data_no_zeros)
+summary(lme1_nz)
+
+lme2_nz <- lme(log_area ~ temperature + hsmax + depth + 
+                 MHW_intensity + CS_intensity +
+                 long + lat,
+               random = ~1 + hsmax|PixelID,
+               method = "ML",
+               data = data_no_zeros)
+summary(lme2_nz)
+plot(lme2_nz)
+
+residuals <- resid(lme2_nz)
+hist(residuals)
+
+require(MuMIn)
+r.squaredGLMM(lme2_nz)
+
+##### Account for time #########################################################
+# Need to trouble shoot this 
+library(glmmTMB)
+
+m_time1 <- glmmTMB(log_area ~ temperature + hsmax + depth + 
+                    MHW_intensity + CS_intensity + long + lat +
+                    ar(0 + as.factor(year)|PixelID), 
+                  data = data)
+
+
+##### 
