@@ -10,7 +10,7 @@ library(GGally)
 library(ggeffects)
 
 # Load data 
-data <- read.csv("Processed_data/data_tables/kelp_data_all_variables_per_year.csv")
+data <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
 
 ##### Explore covariates #######################################################
 # Explore each variable with time
@@ -75,7 +75,7 @@ hist(data$CS_intensity)
 
 data2 <- data %>% dplyr::select(area, biomass, nitrate, #year,
                                 temperature, hsmax, depth, 
-                                gravity, MHW_intensity, CS_intensity)
+                                gravity, MHW_intensity, CS_intensity, distance_to_coast)
 # Removed year as it was too much for the computer 
 
 png("Figures/correlations_plot.png", 

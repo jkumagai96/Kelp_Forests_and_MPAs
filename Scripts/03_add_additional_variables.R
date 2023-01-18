@@ -49,6 +49,11 @@ points_in_mpas <- st_intersection(station_points, mpas) %>%
   dplyr::select(PixelID, mpa_status, Site_ID_12, Estab_Yr_1, AreaMar_12) %>% 
   st_drop_geometry()
 
+# Export points_in_mpas so it can be used in the permutation analysis 
+write.csv(points_in_mpas, 
+          "Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv",
+          row.names = F)
+
 # Join data with kelp data 
 kelp_w_mpas <- left_join(kelp_data, points_in_mpas, by = "PixelID") 
 

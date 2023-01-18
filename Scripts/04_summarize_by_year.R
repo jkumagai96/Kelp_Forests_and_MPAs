@@ -9,6 +9,9 @@ library(tidyverse)
 
 # Load Data
 all_kelp_data <- read.csv("Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv")
+distances <- read.csv("Processed_data/distances_to_coast.csv") %>% 
+  select(-depth) %>% 
+  rename(long = x, lat = y)
 
 ###### Data Manipulation and formating #########################################
 # Summarize by year
@@ -33,7 +36,11 @@ subset <- all_kelp_data %>%
   arrange(PixelID)
 
 # Add this information back in
-final <- left_join(kelp_data_yr, subset, by = "PixelID") 
+df <- left_join(kelp_data_yr, subset, by = "PixelID") 
+
+##### Add in distance to coast #################################################
+
+final <- left_join(df, distances, by = c("long", "lat", "PixelID"))
 
 ##### Export ###################################################################
 
