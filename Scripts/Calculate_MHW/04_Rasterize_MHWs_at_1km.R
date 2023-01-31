@@ -9,8 +9,8 @@ library(tidyverse)
 library(raster)
 
 # load data
-MHW_df <- readRDS("Processed_data/SST/MHW_1984_2021.rds")
-CS_df <- readRDS("Processed_data/SST/CS_1984_2021.rds")
+MHW_df <- readRDS("Processed_data/SST/MHW_1983_2021.rds")
+CS_df <- readRDS("Processed_data/SST/CS_1983_2021.rds")
 base_grid <- raster("Data/standard_grid.tif")
 
 # First we will go through formatting, processing, and exporting for marine heat
@@ -18,9 +18,10 @@ base_grid <- raster("Data/standard_grid.tif")
 ##### Format data ##############################################################
 MHW_intensity <- MHW_df %>% 
   arrange(year) %>% 
-  dplyr::select(-c(mhw_events, mhw_days)) %>% # Filter data
+  relocate(lon, lat) %>% 
+  dplyr::select(-c(count, total_days)) %>% # Filter data
   pivot_wider(names_from = year,
-              values_from = mhw_int_cumulative) # rasterfrom XYZ requires wide data
+              values_from = total_icum) # rasterfrom XYZ requires wide data
   
 
 ##### Process data #############################################################
@@ -39,12 +40,12 @@ MHW_001_table <- rasterToPoints(MHW_001_grid) %>%
 # Format final data 
 final_MHW_data <- MHW_001_table %>% 
   rename("long" = x, "lat" = y) %>% 
-  pivot_longer(cols = X1984:X2021, names_to = "year", values_to = "MHW_cummulative") %>% 
+  pivot_longer(cols = X1983:X2021, names_to = "year", values_to = "MHW_cummulative") %>% 
   mutate(year = substring(year, 2))
 
 ##### Export ###################################################################
 # Export tif to visualize in QGIS 
-writeRaster(MHW_001_grid, "Processed_data/SST/MHW_cummulative_intensity_1km.tif") 
+writeRaster(MHW_001_grid, "Processed_data/SST/MHW_cummulative_intensity_1km.tif", overwrite = T) 
 
 saveRDS(object = final_MHW_data,
         file = "Processed_data/SST/MHW_cummulative_intensity_1km.rds")
@@ -53,9 +54,10 @@ saveRDS(object = final_MHW_data,
 ##### Cold Spells ##############################################################
 CS_intensity <- CS_df %>% 
   arrange(year) %>% 
-  dplyr::select(-c(cs_events, cs_days)) %>% # Filter data
+  relocate(lon, lat) %>% 
+  dplyr::select(-c(count, total_days)) %>% # Filter data
   pivot_wider(names_from = year,
-              values_from = cs_int_cumulative) # rasterfrom XYZ requires wide data
+              values_from = total_icum) # rasterfrom XYZ requires wide data
 
 # Step 1: Create cold spells rasters at 0.25 degree grid
 CS_025_grid <- rasterFromXYZ(CS_intensity, 
@@ -72,7 +74,7 @@ CS_001_table <- rasterToPoints(CS_001_grid) %>%
 # Format final data 
 final_CS_data <- CS_001_table %>% 
   rename("long" = x, "lat" = y) %>% 
-  pivot_longer(cols = X1984:X2021, names_to = "year", values_to = "CS_cummulative") %>% 
+  pivot_longer(cols = X1983:X2021, names_to = "year", values_to = "CS_cummulative") %>% 
   mutate(year = substring(year, 2))
 
 saveRDS(object = final_CS_data,

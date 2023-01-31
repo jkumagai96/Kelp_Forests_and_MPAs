@@ -1,4 +1,4 @@
-# Date: November 28th 2022
+# Date: January 25th 2022
 # Author: Joy A. Kumagai (kumagaij@stanford.edu)
 # Purpose: Create a data table with additional variables including, MPA 
 #          protection, human gravity index, and marine heat waves and cold spells 
@@ -11,25 +11,33 @@ library(sf)
 library(tidyverse)
 
 ##### Set up: load data ########################################################
-mpas_original <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp")
+mpas_original_south <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp") %>% 
+  st_transform(crs = 4326) %>% 
+  dplyr::select(Site_ID_12, Estab_Yr_1, AreaMar_12, Status_12)
+
+mpas_original_north <- read_sf("Data/Filtered_MPAs/Nothern_California.shp") %>% 
+  dplyr::select(Site_ID, Estab_Yr, AreaMar, Status) %>% 
+  rename("Site_ID_12" = "Site_ID",
+       "Estab_Yr_1" = "Estab_Yr",
+       "AreaMar_12" = "AreaMar",
+       "Status_12" = "Status")
+
+# Combine north and south mpas
+mpas_original <- rbind(mpas_original_north, mpas_original_south)
+
 station_data <- read.csv("Processed_data/data_tables/PixelID_reference.csv")
 kelp_data <- read.csv("Processed_data/data_tables/kelp_data_per_quarter.csv")
 human_gravity <- read.csv("Data/Population/human_gravity_for_kelp_patches.csv") %>% 
   rename(long = lon)
 
 # Marine heatwaves and cold spells 
-cold_spells <- readRDS("Processed_data/SST/CS_cummulative_intensity_1km.rds") %>% 
-  filter(lat <= 37.4) %>% 
-  filter(long >= -122.5)
+cold_spells <- readRDS("Processed_data/SST/CS_cummulative_intensity_1km.rds") 
 
-heat_waves <- readRDS("Processed_data/SST/MHW_cummulative_intensity_1km.rds") %>% 
-  filter(lat <= 37.4) %>% 
-  filter(long >= -122.5)
+heat_waves <- readRDS("Processed_data/SST/MHW_cummulative_intensity_1km.rds") 
 
 ##### Formatting ###############################################################
 # Select needed attribuets from MPAs
 mpas <- mpas_original %>% 
-  dplyr::select(Site_ID_12, Estab_Yr_1, AreaMar_12, Status_12)  %>% # I selected Area_Mar12, and not Area? QUESTION
   rename("mpa_status" = "Status_12") %>% 
   # Match projections with kelp data 
   st_transform(crs = 4326) 
@@ -90,7 +98,7 @@ final_data <- kelp_w_mpas_adjusted %>%
   relocate(Mpa_ID, .after = depth) %>% 
   relocate(mpa_status, .after = Mpa_ID) %>% 
   relocate(mpa_area, .after = mpa_status) %>% 
-  select(-Estab_Yr_1)
+  dplyr::select(-Estab_Yr_1)
 
 ##### Add in Human Gravity Index ###############################################
 
@@ -114,7 +122,13 @@ final_data <- final_data %>%
 n_na <- final_data %>% filter(is.na(MHW_intensity)) %>% nrow()
 total <- nrow(final_data)
 
-n_na/total*100 # 10.8% of the data are NAs now 
+n_na/total*100 # 11.5% of the data are NAs now 
+
+##### Add in regions according to Marine Life Protecion Act Regions ##########
+final_data <- final_data %>% 
+  mutate(region = ifelse(lat > 34.4486, "Central_Coast", "South_Coast")) %>% 
+  mutate(region = ifelse(lat > 37.1819, "North_Central_Coast", region)) %>% 
+  mutate(region = ifelse(lat > 39.0044, "North_Coast", region))
 
 ##### Export ###################################################################
 

@@ -21,7 +21,7 @@ SST_load <- function(file_name){
     hyper_tibble() %>% 
     mutate(time_full = as.POSIXct(time, origin = "1970-01-01")) %>% 
     mutate(time_final = format(time_full, format="%Y-%m-%d")) %>% 
-    select(longitude, latitude, time_final, sst) %>% 
+    dplyr::select(longitude, latitude, time_final, sst) %>% 
     dplyr::rename(t = time_final, temp = sst) %>% 
     rename(lon = longitude, lat = latitude) %>% 
     mutate(t = as.Date(t)) %>% 
@@ -49,4 +49,4 @@ ggsave("Figures/SST_20190630.png")
 
 ##### Export ###################################################################
 saveRDS(object = SST_dat,
-        file = "Processed_data/SST/SST_1984_2021.rds")
+        file = "Processed_data/SST/SST_1983_2021.rds")

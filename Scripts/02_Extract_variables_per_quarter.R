@@ -103,9 +103,15 @@ depth_r <- rasterize(x = coords,
 # Create points out of depth raster
 depth_p <- rasterToPoints(depth_r) %>% 
   as.data.frame() %>% 
-  filter(y <= 37.4) %>% 
+  filter(y <= 42) %>% 
   mutate(PixelID = 1:nrow(.)) %>% 
   rename(depth = layer)
+
+# export
+write.csv(depth_p, 
+          "Processed_data/data_tables/PixelID_reference.csv",
+          row.names = F
+)
 
 ##### Declare Functions ########################################################
 # We want to filter out 1km2 cells where more than 25% of the pixels (30mx30m) 
@@ -120,10 +126,6 @@ F_filter_NAs <- function(x,...) {
   if (n_nas/len < .25) {return(1)}
   else(return(NA))
 }
-
-
-test <- c(0, 1, 0, 0, 5, 0, 1, NA, NA, NA)
-F_filter_NAs(test)
 
 ## Process variables ###########################################################
 PixelID <- 1:nrow(depth_p)        # ID just in case we need to join variables not in order
@@ -157,7 +159,7 @@ names(k) <- paste0("Q", study_quarters, "_", study_years)
 
 data_quarter <- rasterToPoints(k) %>% 
   as.data.frame() %>% 
-  filter(y <= 37.4) 
+  filter(y <= 42) 
 
 data_quarter_long <- data_quarter %>% 
   pivot_longer(Q1_1984:Q4_2021, names_to = "Time", values_to = "value") %>% 
@@ -186,7 +188,7 @@ for (i in 1:length(variables)) {
   
   data_quarter <- rasterToPoints(k) %>% 
     as.data.frame() %>% 
-    filter(y <= 37.4) 
+    filter(y <= 42) 
   
   data_quarter_long <- data_quarter %>% 
     pivot_longer(Q1_1984:Q4_2021, names_to = "Time", values_to = "value") %>% 

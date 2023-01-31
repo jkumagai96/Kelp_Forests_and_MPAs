@@ -41,12 +41,10 @@ all_kelp_data$log_area <- log(all_kelp_data$area + 1)
 # Decisions: Focus on 2015
 kelp_data <- all_kelp_data %>% 
   filter(year == 2015) %>% 
-  # filter(lat <= 37 & lat >= 35) %>% 
   filter(area != 0 )
 
 zeros <- all_kelp_data %>% 
   filter(year == 2015) %>% 
-  # filter(lat <= 37 & lat >= 35) %>% 
   filter(area == 0 )
   
 points <- st_as_sf(kelp_data, 

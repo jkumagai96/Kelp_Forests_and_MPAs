@@ -10,7 +10,7 @@ library(tidyverse)
 # Load Data
 all_kelp_data <- read.csv("Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv")
 distances <- read.csv("Processed_data/distances_to_coast.csv") %>% 
-  select(-depth) %>% 
+  dplyr::select(-depth) %>% 
   rename(long = x, lat = y)
 
 ###### Data Manipulation and formating #########################################
@@ -25,7 +25,8 @@ kelp_data_yr <- all_kelp_data %>%
             MHW_intensity = first(MHW_intensity), # same value for all quarters as it was calculated by year
             CS_intensity = first(CS_intensity), # same value for all quarters 
             mpa_status = first(mpa_status), # same value for all quarters 
-            mpa_area = first(mpa_area))  # same value for all quarters 
+            mpa_area = first(mpa_area),  # same value for all quarters 
+            region = first(region)) # same value for all quarters 
 
 kelp_data_yr$mpa_area[is.na(kelp_data_yr$mpa_area)] <- 0
 

@@ -9,7 +9,7 @@ library(tidyverse)
 
 ##### Process ##################################################################
 # Declare variables
-year <- 1984:2021
+year <- 1983:2021
 
 # Download data
 for (i in 1:length(year)) {
@@ -18,5 +18,8 @@ for (i in 1:length(year)) {
   download.file(website, destfile = file_name, quiet = TRUE)
   print(i)
 }
+
+# Clean up files 
+unlink("Data/SST/*.xml")
 
 # Url created from https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdcOisst21Agg_LonPM180.html

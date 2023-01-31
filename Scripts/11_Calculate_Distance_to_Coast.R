@@ -24,7 +24,6 @@ station_points <- st_transform(station_points, crs = 3310)
 distance_to_coast <- st_distance(station_points, CA)
 
 ##### Export distance per station point ########################################
-# Check if in right order? 
 data_final <- cbind(station_data, distance_to_coast)
 
 write.csv(data_final, "Processed_data/distances_to_coast.csv", row.names = F)

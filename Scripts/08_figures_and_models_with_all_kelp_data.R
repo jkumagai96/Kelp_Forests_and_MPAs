@@ -134,16 +134,31 @@ plot5 <- kelp_data %>%
   ggplot(aes(x = mpa_status, y = mean_area, color = factor(hw, levels = c("2008-2013", "2014-2015", "2016-2021")))) + 
   geom_boxplot(lwd = 1) + 
   theme_bw() +
-  #theme(legend.position="bottom") +
+  theme(legend.position="bottom") +
   scale_color_manual(values = c("#440154FF","#FE6E00", "#2A788EFF")) +
   labs(y = "Mean Kelp Area (m2)", x = "MPA Category", color = "") 
 
 ggsave(last_plot(), filename = "Figures/Before_during_after_heatwave.png",
        dpi = 600,
        units = "in",
-       height = 5,
-       width = 8)
+       height = 4,
+       width = 6)
 
+
+# Calculate percent declines 
+dat <- kelp_data %>% 
+  filter(year >= 2008) %>% 
+  group_by(year, mpa_status, hw) %>% 
+  summarize(mean_area = mean(area, na.rm = T))
+
+d <- dat %>% filter(year < 2014) %>% filter(mpa_status == "Partial")
+mean(d$mean_area)
+
+e <- dat %>% filter(year > 2013 & year < 2016) %>% filter(mpa_status == "Partial")
+mean(e$mean_area)
+
+f <- dat %>% filter(year > 2015) %>% filter(mpa_status == "Partial")
+mean(f$mean_area)
 ##### Models of kelp area without points in  MPAs ##############################
 data <- kelp_data_unprotected %>% 
   select(-Mpa_ID, -mpa_status) %>% 
