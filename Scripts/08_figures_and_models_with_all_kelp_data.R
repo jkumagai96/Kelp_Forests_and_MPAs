@@ -26,7 +26,7 @@ kelp_data_unprotected <- kelp_data %>%
 
 # What percent of the data are points in Mpas? 
 1 - nrow(kelp_data_unprotected)/nrow(kelp_data) 
-# 93% of the data are not within Mpas. 
+# 93% of the data are not within Mpas. #*** I get 71%?
 
 
 ##### Create figures ###########################################################

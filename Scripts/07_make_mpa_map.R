@@ -85,3 +85,5 @@ ggplot() +
         panel.background = element_rect(fill = 'white'))
 
 ggsave(filename = "Figures/CA_just_kelp_2015.png", dpi = 600)
+
+#*** Note that the package tmap has a really simple and powerful mapping structure...sometimes easier than ggplot, aloough ggplot has recently improved its mapping functionality

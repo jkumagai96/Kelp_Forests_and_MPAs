@@ -24,7 +24,7 @@ kelp_data$log_area <- log(kelp_data$area + 1)
 kelp_data$mpa_status <- factor(kelp_data$mpa_status, levels = c("None", "Partial", "Full"))
 
 # Count percentage of zero's for NAs
-nrow(kelp_data[kelp_data$area == 0, ])/nrow(kelp_data) # 28.2% of the kelp area are zero's
+nrow(kelp_data[kelp_data$area == 0, ])/nrow(kelp_data) # 28.2% of the kelp area are zero's #*** I get 31%?
 
 # Scale the dataset except for area 
 kelp_data <- kelp_data %>% 
@@ -60,6 +60,18 @@ kelp_data_2008 <- kelp_data_2008 %>%
   mutate(mhw_event = ifelse(year < 2014, "before", "during")) %>% 
   mutate(mhw_event = ifelse(year > 2015, "after", mhw_event)) %>% 
   mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after"))) 
+           ifelse(year < 2014, "before", "during") %>% 
+  mutate(mhw_event = ifelse(year > 2015, "after", mhw_event)) %>% 
+  mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after"))) 
+#*** Note that case_when, might be easier here? MUCH shorter...
+kelp_data_2008 <- kelp_data_2008 %>% 
+ mutate(mhw_event = case_when(
+   year < 2014 ~ "before",
+   year >= 2014 & year < 2015 ~ "during",
+   TRUE ~ "after" # Everything that is not before or during is after
+   ),
+   mhw_event = factor(mhw_event, levels = c("during", "before", "after")))           
+
 
 ##### GAMM Change in Kelp Area #################################################
 m1 <- mgcv::gamm(
@@ -145,6 +157,18 @@ data_binary_from_2008 <- kelp_data %>%
   mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after"))) 
 
 ##### GAMMS ####################################################################
+#*** Just tinkering
+m1 <- gam(change_in_kelp ~
+            s(year) + s(MHW_intensity) + s(mpa_area) + s(nitrate) + s(gravity) + s(depth) + mpa_status +
+            s(PixelID, bs = "re") +
+            s(PixelID, year, bs = "re"),
+           data = kelp_data_2008)
+summary(m1)
+plot(m1)
+
+
+
+
 mA <- mgcv::gamm(
   area_s ~
     s(lat, k = 100, bs = "gp", m = c(3, .03)) +

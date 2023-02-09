@@ -37,3 +37,6 @@ writeRaster(
   filename = here::here("Data", "standard_grid.tif"),
   overwrite = T
 )
+#*** An alternative here, is to simply save the raster as an R data object:
+saveRDS(standard_grid, "Data/standard_grid.Rda") # Including the path is in my opinion a better option than using here
+#*** NOTE that you can save just about ANY R object in this way, which is quite neat
