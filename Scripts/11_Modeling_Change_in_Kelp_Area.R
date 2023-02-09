@@ -159,7 +159,7 @@ data_binary_from_2008 <- kelp_data %>%
 ##### GAMMS ####################################################################
 #*** Just tinkering
 m1 <- gam(change_in_kelp ~
-            s(year) + s(MHW_intensity) + s(mpa_area) + s(nitrate) + s(gravity) + s(depth) + mpa_status +
+            s(year) + s(MHW_intensity) + s(mpa_area) + s(nitrate) + s(gravity) + s(depth) +s(log_area) + mpa_status +
             s(PixelID, bs = "re") +
             s(PixelID, year, bs = "re"),
            data = kelp_data_2008)
