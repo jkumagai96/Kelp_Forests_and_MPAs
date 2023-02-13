@@ -1,4 +1,4 @@
-# Date: January 11th 2023
+# Date: February 1st 2023
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Bootstrap - randomization approach 
 # BIO 202: Ecological Statistics
