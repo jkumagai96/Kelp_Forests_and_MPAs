@@ -14,9 +14,7 @@ library(stringr)
 
 ## Load Data 
 # Load standard .01 grid
-base_grid <- raster(here("Data", "standard_grid.tif"))
-#*** Alternatively,
-base_grid <- read_rds("Data/standard_grid.Rda") # Kinda easier, and also gets you thinking about relative paths
+base_grid <- read_rds("Data/standard_grid.Rda") 
 
 # Load all_data NC file
 all_data <- nc_open(
@@ -94,11 +92,6 @@ quarter <- ncvar_get(
   varid = "quarter"
 )
 
-#*** I don't have access to the netCDF, but this might be more easily be used in R by simply using the format:
-depth_dat <- stack("netCDF_name.nc", var = "depth") # The resulting raster will contain maps of depth with a layer for each time...just change var = "x" for other variables
-#*** ALSO note that if you call arguments in order, you don't need to use argument names, so to get a varibale from a netCDF:
-depth <- ncvar_get(all_data, "depth") # Will do the trick
-
 ## Create depth raster #########################################################
 # Create raster with depth data 
 depth_r <- rasterize(x = coords,                 
@@ -173,16 +166,14 @@ data_quarter_long <- data_quarter %>%
   mutate(variable = "area") %>% 
   arrange(Time)
 
-
-
 data_all <- rbind(data_all, data_quarter_long)
 
 # For loop for the rest of the variables 
 for (i in 1:length(variables)) {
   
-  var <- var_list[[i]] #*** Be careful of using function names as variable names; var(x) returns the variance of x...
+  chosen_var <- var_list[[i]] 
   
-  data_extracted <- var[, year >= 1984] 
+  data_extracted <- chosen_var[, year >= 1984] 
   
   # Create a raster brick of quarter-year kelp variable
   k <- rasterize(x = coords,                 

@@ -36,7 +36,7 @@ cold_spells <- readRDS("Processed_data/SST/CS_cummulative_intensity_1km.rds")
 heat_waves <- readRDS("Processed_data/SST/MHW_cummulative_intensity_1km.rds") 
 
 ##### Formatting ###############################################################
-# Select needed attribuets from MPAs
+# Select needed attributes from MPAs
 mpas <- mpas_original %>% 
   rename("mpa_status" = "Status_12") %>% 
   # Match projections with kelp data 

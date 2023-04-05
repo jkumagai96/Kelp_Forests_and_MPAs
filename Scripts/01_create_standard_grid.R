@@ -1,5 +1,5 @@
 ################################################################################
-# screate standard grid
+# create standard grid
 ################################################################################
 #
 # Juan Carlos Villaseñor-Derbez
@@ -32,11 +32,5 @@ standard_grid <- raster(
 
 # Export the raster ------------------------------------------------------------
 
-writeRaster(
-  x = standard_grid,
-  filename = here::here("Data", "standard_grid.tif"),
-  overwrite = T
-)
-#*** An alternative here, is to simply save the raster as an R data object:
-saveRDS(standard_grid, "Data/standard_grid.Rda") # Including the path is in my opinion a better option than using here
-#*** NOTE that you can save just about ANY R object in this way, which is quite neat
+saveRDS(standard_grid, "Data/standard_grid.Rda") 
+

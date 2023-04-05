@@ -63,6 +63,7 @@ kelp_data_2008 <- kelp_data_2008 %>%
            ifelse(year < 2014, "before", "during") %>% 
   mutate(mhw_event = ifelse(year > 2015, "after", mhw_event)) %>% 
   mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after"))) 
+
 #*** Note that case_when, might be easier here? MUCH shorter...
 kelp_data_2008 <- kelp_data_2008 %>% 
  mutate(mhw_event = case_when(

@@ -38,8 +38,9 @@ data %>%
   geom_violin()
 
 data %>% 
+  drop_na(biomass) %>% 
   group_by(year) %>% 
-  summarize(biomass_m = mean(biomass, na.rm = TRUE)) %>% #*** You forgot to strip NAs here
+  summarize(biomass_m = mean(biomass, na.rm = TRUE)) %>% 
   ggplot(aes(x = year, y = biomass_m)) +
   geom_point()
 
@@ -67,7 +68,7 @@ data %>%
 hist(data$hsmax) # non-normal distribution (right side tail)
 hist(sqrt(data$hsmax)) # Square root transformation does a good job of normalizing the data 
 
-## Temperature anonomolies #*** Note that "anomalies" in a mathematical sense are differences between mean and observation...so these are not technically anomalies
+## Marine heat waves and cold spells - Temperature 
 hist(data$MHW_intensity)
 hist(data$CS_intensity)
 
