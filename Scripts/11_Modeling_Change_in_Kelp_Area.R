@@ -24,7 +24,7 @@ kelp_data$log_area <- log(kelp_data$area + 1)
 kelp_data$mpa_status <- factor(kelp_data$mpa_status, levels = c("None", "Partial", "Full"))
 
 # Count percentage of zero's for NAs
-nrow(kelp_data[kelp_data$area == 0, ])/nrow(kelp_data) # 28.2% of the kelp area are zero's #*** I get 31%?
+nrow(kelp_data[kelp_data$area == 0, ])/nrow(kelp_data) # 31% of the kelp area are zero's 
 
 # Scale the dataset except for area 
 kelp_data <- kelp_data %>% 
@@ -57,22 +57,13 @@ hist(kelp_data_2008$change_in_kelp)
 
 # Add in factor of before, during, after marine heat wave event
 kelp_data_2008 <- kelp_data_2008 %>% 
-  mutate(mhw_event = ifelse(year < 2014, "before", "during")) %>% 
-  mutate(mhw_event = ifelse(year > 2015, "after", mhw_event)) %>% 
-  mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after"))) 
-           ifelse(year < 2014, "before", "during") %>% 
-  mutate(mhw_event = ifelse(year > 2015, "after", mhw_event)) %>% 
-  mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after"))) 
-
-#*** Note that case_when, might be easier here? MUCH shorter...
-kelp_data_2008 <- kelp_data_2008 %>% 
- mutate(mhw_event = case_when(
-   year < 2014 ~ "before",
-   year >= 2014 & year < 2015 ~ "during",
-   TRUE ~ "after" # Everything that is not before or during is after
-   ),
-   mhw_event = factor(mhw_event, levels = c("during", "before", "after")))           
-
+  mutate(mhw_event = case_when(
+    year < 2014 ~ "before",
+    year > 2015 ~ "after",
+    .default = "during" # Everything that is not before or after is during
+  )
+  ) %>% 
+  mutate(mhw_event = factor(mhw_event, levels = c("during", "before", "after")))
 
 ##### GAMM Change in Kelp Area #################################################
 m1 <- mgcv::gamm(
