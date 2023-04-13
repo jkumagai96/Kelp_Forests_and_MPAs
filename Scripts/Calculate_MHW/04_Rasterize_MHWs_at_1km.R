@@ -8,10 +8,14 @@
 library(tidyverse)
 library(raster)
 
+print('packages loaded')
+
 # load data
 MHW_df <- readRDS("Processed_data/SST/MHW_1983_2021.rds")
 CS_df <- readRDS("Processed_data/SST/CS_1983_2021.rds")
 base_grid <- raster("Data/standard_grid.tif")
+
+print('data loaded')
 
 # First we will go through formatting, processing, and exporting for marine heat
 # waves, then the last section will do the same process for cold spells.
@@ -50,6 +54,7 @@ writeRaster(MHW_001_grid, "Processed_data/SST/MHW_cummulative_intensity_1km.tif"
 saveRDS(object = final_MHW_data,
         file = "Processed_data/SST/MHW_cummulative_intensity_1km.rds")
 
+print('marine heat wave data exported')
 
 ##### Cold Spells ##############################################################
 CS_intensity <- CS_df %>% 
@@ -79,3 +84,6 @@ final_CS_data <- CS_001_table %>%
 
 saveRDS(object = final_CS_data,
         file = "Processed_data/SST/CS_cummulative_intensity_1km.rds")
+
+print('marine cold spell data exported')
+print('script is finished')

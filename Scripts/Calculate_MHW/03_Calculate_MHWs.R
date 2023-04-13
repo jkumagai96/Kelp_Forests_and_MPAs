@@ -3,15 +3,19 @@
 # Purpose: Calculate MHWs
 # BIO 202: Ecological Statistics
 
+print('begining of script')
 ##### Set up ###################################################################
 # Load Packages 
-library(dplyr) # For basic data manipulation
-library(ggplot2) # For visualizing data
+library(tidyverse) # For basic data manipulation
+
 library(heatwaveR) # For detecting MHWs
+
+print('packages loaded')
 
 # Load data
 SST_data <- readRDS("Processed_data/SST/SST_1983_2021.rds")
 
+print('data loaded')
 ##### Declare Functions ########################################################
 # Marine cold spell detect event and summarize per year function
 mhw_event_only <- function(df){
@@ -37,6 +41,7 @@ mcs_event_only <- function(df){
   return(annual)
 }
 
+print('function loaded')
 ##### Calculate Heatwaves and Cold Spells ######################################
 ### Heatwaves
 MHW_df <- SST_data %>% 
@@ -45,10 +50,12 @@ MHW_df <- SST_data %>%
   # Then we run our MHW detecting function on each group
   group_modify(~mhw_event_only(.x)) %>% 
   # Select columns we are interested in 
-  dplyr::select(lat, lon, year, count, total_days, total_icum) %>% 
-  # Change NAs to 0's when there are no detected events
-  mutate(total_days = replace_na(total_days, 0)) %>% 
-  mutate(total_icum = replace_na(total_icum, 0))
+  dplyr::select(lat, lon, year, count, total_days, total_icum) %>%
+ # Change NAs to 0's when there are no detected events
+  dplyr::mutate(total_days = replace_na(total_days, 0)) %>% 
+  dplyr::mutate(total_icum = replace_na(total_icum, 0))
+
+print('marine heat waves calculated')
 
 ### Cold spells
 CS_df <- SST_data %>% 
@@ -59,9 +66,10 @@ CS_df <- SST_data %>%
   # Select columns we are interested in 
   dplyr::select(lat, lon, year, count, total_days, total_icum) %>% 
   # Change NAs to 0's when there are no detected events
-  mutate(total_days = replace_na(total_days, 0)) %>% 
-  mutate(total_icum = replace_na(total_icum, 0))
+  dplyr::mutate(total_days = replace_na(total_days, 0)) %>% 
+  dplyr::mutate(total_icum = replace_na(total_icum, 0))
 
+print('cold spells calculated')
 
 ##### Export ###################################################################
 saveRDS(object = MHW_df,
@@ -70,3 +78,4 @@ saveRDS(object = MHW_df,
 saveRDS(object = CS_df,
         file = "Processed_data/SST/CS_1983_2021.rds")
 
+print('script finished')

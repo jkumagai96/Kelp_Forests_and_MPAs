@@ -3,6 +3,7 @@
 # Purpose: Extract NetCDF data into table perquarter
 # BIO 202: Ecological Statistics
 
+print("beginning")
 ###### Set up ##################################################################
 # Load Packages
 library(tidyverse)
@@ -11,6 +12,8 @@ library(raster)
 library(sf)
 library(ncdf4)
 library(stringr)
+
+print("packages are loaded")
 
 ## Load Data 
 # Load standard .01 grid
@@ -26,6 +29,7 @@ all_data <- nc_open(
   write = F
 )
 
+print('data loaded')
 ##### Extraction ###############################################################
 
 # Extract area values ----------------------------------------------------------
@@ -91,6 +95,8 @@ quarter <- ncvar_get(
   nc = all_data,
   varid = "quarter"
 )
+
+print('extractions are finished')
 
 ## Create depth raster #########################################################
 # Create raster with depth data 

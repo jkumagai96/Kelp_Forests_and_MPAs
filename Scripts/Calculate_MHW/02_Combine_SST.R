@@ -4,27 +4,39 @@
 # BIO 202: Ecological Statistics
 
 ##### Set up ###################################################################
+
 # Load Packages 
+
+print('before packages are loaded')
+
 library(tidyverse)
+print('tidyverse loaded')
+
+library(rerddap)
+print('rerddap installed')
+
+library(doParallel)
+print('doParallel installed')
+
 library(tidync) # For easily dealing with NetCDF data
-library(rerddap) # For easily downloading subsets of data
-library(doParallel) # For parallel processing
+
+print('tidync loaded')
 
 # Set up parallel processing 
-detectCores()
-doParallel::registerDoParallel(3)
+doParallel::registerDoParallel(10)
 
+print('Parallel processing set up')
 #### Load Data ################################################################
 
 SST_load <- function(file_name){
   OISST_dat <- tidync(file_name) %>%
     hyper_tibble() %>% 
-    mutate(time_full = as.POSIXct(time, origin = "1970-01-01")) %>% 
-    mutate(time_final = format(time_full, format="%Y-%m-%d")) %>% 
+    dplyr::mutate(time_full = as.POSIXct(time, origin = "1970-01-01")) %>% 
+    dplyr::mutate(time_final = format(time_full, format="%Y-%m-%d")) %>% 
     dplyr::select(longitude, latitude, time_final, sst) %>% 
     dplyr::rename(t = time_final, temp = sst) %>% 
     rename(lon = longitude, lat = latitude) %>% 
-    mutate(t = as.Date(t)) %>% 
+    dplyr::mutate(t = as.Date(t)) %>% 
     na.omit()
   return(OISST_dat)
 }
@@ -32,21 +44,16 @@ SST_load <- function(file_name){
 # Locate the files that will be loaded
 SST_files <- dir("Data/SST", full.names = T)
 
+print("SST files found")
+
 # Load the data in parallel
 SST_dat <- plyr::ldply(.data = SST_files, .fun = SST_load, .parallel = T)
 
-# Visualize data
-plot1 <- SST_dat %>% 
-  filter(t == "2019-06-30") %>% 
-  ggplot(aes(x = lon, y = lat)) +
-  geom_tile(aes(fill = temp)) +
-  scale_fill_viridis_c() +
-  coord_quickmap(expand = F) +
-  labs(x = NULL, y = NULL, fill = "SST (°C)") +
-  theme(legend.position = "bottom")
+dir.create("Processed_data/SST")
+print('folder created and export starts now')
 
-ggsave("Figures/SST_20190630.png")
-
-##### Export ###################################################################
+# Export 
 saveRDS(object = SST_dat,
         file = "Processed_data/SST/SST_1983_2021.rds")
+
+print('script completed')

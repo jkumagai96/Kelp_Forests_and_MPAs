@@ -9,14 +9,20 @@
 
 # Is there more kelp area in marine protected areas? Partial vs. fully protected?
 
+print('begining script')
 ###### Set up ##################################################################
 # Load Packages
 library(tidyverse)
+
+print('tidyverse loaded')
 library(sf)
 
+print('packages loaded')
 # Load Data
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
 points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv")
+
+print('data loaded')
 
 ##### Structure Data ###########################################################
 kelp_data <- kelp_data_all %>% 
@@ -145,8 +151,6 @@ for (i in 1:length(years)) {
   
 }
 
-final_results
-0.05/(38*3)
 test <- as.data.frame(final_results <= 0.0004385965)
 test$year <- final_results$year
 
@@ -157,6 +161,7 @@ write.csv(final_results,
           "Processed_data/data_tables/bootstrap_1984_2021.csv", 
           row.names = F)
 
+print('bootstrap results saved')
 ##### Figures ##################################################################
 final_results <- read.csv("Processed_data/data_tables/bootstrap_1984_2021.csv")
 
@@ -172,8 +177,9 @@ results_long <- final_results %>%
 
 results_long$pvalues[results_long$pvalues == 0] <- .000001
 
+print('now attempting to make figure')
 # Plot 
-results_long %>% 
+plot1 <- results_long %>% 
   #filter(year >= 2008) %>% 
   ggplot(aes(x = year, y = -log10(pvalues), group = Comparison)) +
   geom_point(aes(color = Comparison, shape = Comparison), size = 2) +
@@ -190,16 +196,11 @@ results_long %>%
            alpha = .2,fill = "red") +
   labs(y = "-log10(P values)", x = "Year") 
   
-# Export 
-ggsave(last_plot(), filename = "Figures/Bootstrap_1984_to_2021.png",
-       dpi = 600,
-       units = "in", 
-       height = 3, 
-       width = 5)
+# Export
+print('attempting export')
 
+png("Figures/Bootstrap_1984_to_2021.png", width = 5, height = 3, units = "in", res = 600)
+plot1
+dev.off() 
 
-#ggsave(last_plot(), filename = "Figures/Bootstrap_2008_to_2021.png",
-#       dpi = 600,
-#       units = "in", 
-#       height = 3, 
-#       width = 5)
+print('script is finished')
