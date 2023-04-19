@@ -23,7 +23,7 @@ Calculate_percent_recovery <- function(x, min_v, max_v) {
 ##### Format Data ##############################################################
 data_area <- kelp_data_all %>% 
   filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  filter(year > 1999 & year < 2016) %>% 
+  filter(year > 1999 & year < 2014) %>% 
   select(PixelID, year, area) %>% 
   pivot_wider(names_from = year, values_from = area) 
 
