@@ -11,8 +11,7 @@ library(viridis)
 
 # Load Data
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv") %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  filter(year > 1999)
+  filter(region == "South_Coast" | region == "Central_Coast") 
 
 kelp_data_all$missing_data <- is.na(kelp_data_all$area)
 
@@ -188,7 +187,7 @@ plot1 <- ggplot(data = df_protection, aes(x = Recovery_time,
   scale_color_manual(values = viridis(3)) +
   labs(x = "Recovery Time (years)", y = "Cummulative Percent of Pixels Recovered")
 
-png("Figures/Recovery_time_mpa_status.png", 
+png("Figures/Recovery_time_mpa_status_nozeros.png", 
     units = "in", 
     height = 4, 
     width = 6, 
@@ -208,7 +207,7 @@ df_region <- pixel_properties %>%
   rename(n_pixels = n) %>% 
   left_join(n_region, by = "region") %>% 
   mutate(percentage = n_pixels/n_total) %>% 
-  mutate(region = factor(region, levels = c("North_Coast", "North_Central_Coast", "Central_Coast", "South_Coast")))
+  mutate(region = factor(region, levels = c("Central_Coast", "South_Coast")))
 
 
 df_region <- cum_percent_group(df_region, region, percentage)
@@ -221,7 +220,7 @@ plot2 <- ggplot(data = df_region, aes(x = Recovery_time,
   theme_bw() +
   labs(x = "Recovery Time (years)", y = "Cummulative Percent of Pixels Recovered") 
 
-png("Figures/Recovery_time_region.png", 
+png("Figures/Recovery_time_region_nozeros.png", 
     units = "in", 
     height = 4, 
     width = 6, 
