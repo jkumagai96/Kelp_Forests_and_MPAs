@@ -14,11 +14,11 @@ kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_an
 points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv")
 
 # Will only be looking at data from Central and Southern Coast of California
-# Will only be looking at data from 2016-2021 due to calculating percent recovery 
+# Will only be looking at data from 2014-2021 due to calculating percent recovery and also resistence
 
 ##### Declare Functions ########################################################
-Calculate_percent_recovery <- function(x, min_v, max_v) {
-  value <- 100*(x - min_v)/(max_v - min_v)
+Calculate_percent_recovery <- function(x, min_v, mean_v) {
+  value <- 100*(x - min_v)/(mean_v - min_v)
   return(value)
 }
 
@@ -32,14 +32,15 @@ data_area <- kelp_data_all %>%
 # Calculate Max and Min value 
 data_area$min <- apply(data_area, 1, FUN = min, na.rm = T)
 data_area$max <- apply(data_area, 1, FUN = max, na.rm = T)
+data_area$mean <- apply(data_area, 1, FUN = mean, na.rm = T)
 
 df <- data_area %>% 
-  select(PixelID, min, max)
+  select(PixelID, min, max, mean)
 
-# Calculate Percent Recovery for each row in the dataset from 2016 to 2021
+# Calculate Percent Recovery for each row in the dataset from 2014 to 2021
 df_percent_recovery <- kelp_data_all %>% 
   filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  filter(year >= 2016) %>% 
+  filter(year >= 2014) %>% 
   select(PixelID, year, area) %>% 
   left_join(df, by = "PixelID") %>% 
   mutate(percent_recovery = NA)
@@ -47,17 +48,17 @@ df_percent_recovery <- kelp_data_all %>%
 for (i in 1:nrow(df_percent_recovery )) {
   area_i <- df_percent_recovery$area[i]
   min_i <- df_percent_recovery$min[i]
-  max_i <- df_percent_recovery$max[i]
+  mean_i <- df_percent_recovery$mean[i]
   
   df_percent_recovery$percent_recovery[i] <- Calculate_percent_recovery(x = area_i,
                              min_v = min_i,
-                             max_v = max_i)
+                             mean_v = mean_i)
 }
 
 # Join data back 
 kelp_data <- kelp_data_all %>% 
   filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  filter(year >= 2016) %>% 
+  filter(year >= 2014) %>% 
   select(PixelID, year, mpa_status, area) %>% 
   left_join(df_percent_recovery, by = c("PixelID", "year", "area"))
 
@@ -82,7 +83,7 @@ set.seed(20) # So the results are repeatable
 
 # Set up variables outside of the loops
 # bootstrap_list <- list()
-years <- 2016:2021
+years <- 2014:2021
 
 # Remove original mpa_status from kelp_data
 kelp_data_r <- kelp_data %>% select(-mpa_status)
@@ -214,7 +215,7 @@ plot1 <- results_long %>%
   scale_color_manual(values=c('#FF5C00', '#999999','#000EDD')) +
   theme_bw() +
   theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = c(2016, 2017, 2018, 2019, 2020, 2021)) +
+  scale_x_continuous(breaks = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021)) +
   labs(y = "-log10(P values)", x = "Year") 
 
 # Export

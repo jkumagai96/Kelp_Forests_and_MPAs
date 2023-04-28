@@ -1,4 +1,4 @@
-# Date: November 28th 2022
+# Date: April 27th 2023
 # Author: Joy A. Kumagai (kumagaij@stanford.edu)
 # Purpose: Summarize the data by year so it is easier to work with 
 # BIO 202: Ecological Statistics
@@ -13,11 +13,18 @@ distances <- read.csv("Processed_data/distances_to_coast.csv") %>%
   dplyr::select(-depth) %>% 
   rename(long = x, lat = y)
 
+###### Removing years with too many NA's #######################################
+n_nas_data <- all_kelp_data %>% 
+  group_by(PixelID, year) %>% 
+  summarize(c_nas = sum(is.na(area))) 
+
 ###### Data Manipulation and formating #########################################
 # Summarize by year
 kelp_data_yr <- all_kelp_data %>% 
+  left_join(n_nas_data) %>% 
+  filter(c_nas < 2) %>% # Removes pixels with too many NA quarters (removed 6% of data)
   group_by(PixelID, year) %>% 
-  summarize(area = mean(area, na.rm = T),
+  summarize(area = max(area, na.rm = T), # Taking the max value of area per year 
             biomass = mean(biomass, na.rm = T),
             hsmax = mean(hsmax, na.rm = T),
             nitrate = mean(nitrate, na.rm = T),
@@ -39,6 +46,7 @@ subset <- all_kelp_data %>%
 # Add this information back in
 df <- left_join(kelp_data_yr, subset, by = "PixelID") 
 
+nrow(df)/(nrow(all_kelp_data)/4) # Filtering data so years with 2 or more quarters with NAs are removed, removed 6% of the data overall
 ##### Add in distance to coast #################################################
 
 final <- left_join(df, distances, by = c("long", "lat", "PixelID"))
