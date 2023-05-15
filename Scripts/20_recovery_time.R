@@ -12,21 +12,12 @@ library(viridis)
 # Load Data
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv") %>% 
   filter(region == "South_Coast" | region == "Central_Coast") 
+n_30x30 <- read.csv("Processed_data/data_tables/Count_30x30_pixels.csv")
 
-kelp_data_all$missing_data <- is.na(kelp_data_all$area)
-
-kelp_data_all %>% 
-  filter(region == "Central_Coast") %>% # Switch the region here 
-  group_by(year) %>% 
-  count(missing_data) %>% 
-  filter(missing_data == TRUE) %>% 
-  ggplot(aes(x = year, y = n)) +
-    geom_bar(stat = "identity")
-
-# There's more NAs in the dataset as you go back in time and it does look different
-  # between regions, with the central cost having more NAs in the 1990's, but these 
-  # only make up max 30 pixels, or %1.5 of the data, so I am not worried about 
-  # these differences. Full and partially protected pixels have no missing values...
+# Removing data
+#kelp_data_all <- kelp_data_all %>% 
+#  left_join(n_30x30, by = "PixelID") %>% 
+#  filter(count > 5)
 
 ##### Calculate baseline area per pixel ########################################
 baseline_data <- kelp_data_all %>% 
@@ -38,7 +29,7 @@ baseline_data <- kelp_data_all %>%
             one_sd_low = mean_area - sd_area) %>% 
   filter(one_sd_low > 0)
 
-476/1961 # Only 25% of the data left...
+516/1961 # Only 25% of the data left...
 
 # Adjust kelp data all
 kelp_data_all <- kelp_data_all[kelp_data_all$PixelID %in% baseline_data$PixelID, ]
@@ -47,8 +38,6 @@ kelp_data_all <- kelp_data_all[kelp_data_all$PixelID %in% baseline_data$PixelID,
 post_hw_data <- kelp_data_all %>% 
   dplyr::select(PixelID, year, area) %>% 
   filter(year > 2015)
-
-
 
 ##### Load Functions ###########################################################
 # Small function to determine if a value is within range, used in the next function
@@ -141,7 +130,7 @@ start - end
 results # Final results
 
 ##### Export results ###########################################################
-write.csv(results, "Processed_data/data_tables/recovery_time.csv", row.names = F)
+# write.csv(results, "Processed_data/data_tables/recovery_time.csv", row.names = F)
 
 
 ##### Explore results ##########################################################

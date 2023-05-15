@@ -1,4 +1,4 @@
-# Date: April 20th 2023
+# Date: May 2nd 2023
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Bootstrap - Permutation approach based on difference in percent recovery instead of kelp area 
 # BIO 202: Ecological Statistics
@@ -17,42 +17,52 @@ points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_an
 # Will only be looking at data from 2014-2021 due to calculating percent recovery and also resistence
 
 ##### Declare Functions ########################################################
-Calculate_percent_recovery <- function(x, min_v, mean_v) {
-  value <- 100*(x - min_v)/(mean_v - min_v)
+Calculate_percent_recovery <- function(x, min_v, max_v) {
+  value <- 100*(x - min_v)/(max_v - min_v)
   return(value)
 }
 
 ##### Format Data ##############################################################
-data_area <- kelp_data_all %>% 
+data_area_long <- kelp_data_all %>% 
   filter(region == "South_Coast" | region == "Central_Coast") %>% 
   filter(year < 2014) %>% 
-  select(PixelID, year, area) %>% 
+  dplyr::select(PixelID, year, area, min_area) 
+
+maxes <- data_area_long %>% 
+  dplyr::select(-min_area) %>% 
   pivot_wider(names_from = year, values_from = area) 
 
+mins <- kelp_data_all %>% 
+  filter(region == "South_Coast" | region == "Central_Coast") %>% 
+  filter(year >= 2014 & year < 2017) %>% 
+  dplyr::select(PixelID, year, min_area) %>% 
+  pivot_wider(names_from = year, values_from = min_area) 
+
+# Create new dataframe to store values in 
+df <- maxes %>% 
+  dplyr::select(PixelID)
+
 # Calculate Max and Min value 
-data_area$min <- apply(data_area, 1, FUN = min, na.rm = T)
-data_area$max <- apply(data_area, 1, FUN = max, na.rm = T)
-data_area$mean <- apply(data_area, 1, FUN = mean, na.rm = T)
+df$min <- apply(mins, 1, FUN = min, na.rm = T) # Change this so that it is the min of 2014, 2015, 2016
+df$max <- apply(maxes, 1, FUN = mean, na.rm = T)
 
-df <- data_area %>% 
-  select(PixelID, min, max, mean)
-
+##### Calculate Percent Recovery ###############################################
 # Calculate Percent Recovery for each row in the dataset from 2014 to 2021
 df_percent_recovery <- kelp_data_all %>% 
   filter(region == "South_Coast" | region == "Central_Coast") %>% 
   filter(year >= 2014) %>% 
-  select(PixelID, year, area) %>% 
+  dplyr::select(PixelID, year, area) %>% 
   left_join(df, by = "PixelID") %>% 
   mutate(percent_recovery = NA)
 
 for (i in 1:nrow(df_percent_recovery )) {
   area_i <- df_percent_recovery$area[i]
   min_i <- df_percent_recovery$min[i]
-  mean_i <- df_percent_recovery$mean[i]
+  max_i <- df_percent_recovery$max[i]
   
   df_percent_recovery$percent_recovery[i] <- Calculate_percent_recovery(x = area_i,
                              min_v = min_i,
-                             mean_v = mean_i)
+                             max_v = max_i)
 }
 
 # Join data back 
@@ -210,7 +220,7 @@ print('now attempting to make figure')
 plot1 <- results_long %>% 
   ggplot(aes(x = year, y = -log10(pvalues), group = Comparison)) +
   geom_point(aes(color = Comparison, shape = Comparison), size = 2) +
-  geom_hline(yintercept = -log10(0.05/(18))) +
+  geom_hline(yintercept = -log10(0.05/(24))) +
   geom_hline(yintercept = -log10(0.05/3), linetype = "dashed") +
   scale_color_manual(values=c('#FF5C00', '#999999','#000EDD')) +
   theme_bw() +

@@ -1,4 +1,4 @@
-# Date: October 25th 2022
+# Date: May 2nd 2022
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Extract NetCDF data into table perquarter
 # BIO 202: Ecological Statistics
@@ -116,6 +116,35 @@ depth_p <- rasterToPoints(depth_r) %>%
 # export
 write.csv(depth_p, 
           "Processed_data/data_tables/PixelID_reference.csv",
+          row.names = F
+)
+##### Create raster with counts of 30x30m pixels ###############################
+# Create raster
+n_pixels_r <- rasterize(x = coords, 
+                        y = base_grid,
+                        field = 1,
+                        fun = "count", 
+                        na.rm = T)
+hist(n_pixels_r) # Change to percent of the entire dataset
+freq_table <- freq(n_pixels_r) %>% as.data.frame()
+freq_table <- freq_table[-563,] # Remove count of NAs
+sum(freq_table$count) #1961
+sum(freq_table$count[6:562]) #1664
+
+1664/1961 
+# 15.2% of the data would be removed if you scaled Bell et al. 2023 methodology and
+# got rid of the cells where there are 5 or less 30x30m pixels
+
+count_30x30 <- rasterToPoints(n_pixels_r) %>% 
+  as.data.frame() %>% 
+  filter(y <= 42) %>% 
+  rename(count = layer) %>% 
+  left_join(depth_p, by = c("x","y")) %>% 
+  dplyr::select(PixelID, count)
+
+# export
+write.csv(count_30x30, 
+          "Processed_data/data_tables/Count_30x30_pixels.csv",
           row.names = F
 )
 

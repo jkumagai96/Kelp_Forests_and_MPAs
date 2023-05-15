@@ -1,4 +1,4 @@
-# Date: April 27th 2023
+# Date: May 3rd 2023
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Bootstrap - Permutation approach based on difference in percent recovery 
 #          uses median and here I will be testing how sensitive my results are to 
@@ -8,8 +8,6 @@
 ##### Set Up: Packages and Data ################################################
 # Packages
 library(tidyverse)
-library(doParallel)
-library(foreach)
 
 # Data 
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv") 
@@ -22,25 +20,32 @@ Calculate_percent_recovery <- function(x, min_v, max_v) {
 }
 
 ##### Format Data ##############################################################
-data_area <- kelp_data_all %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
+data_area_long <- kelp_data_all %>% 
   filter(year < 2014) %>% 
-  select(PixelID, year, area) %>% 
+  dplyr::select(PixelID, year, area, min_area) 
+
+maxes <- data_area_long %>% 
+  dplyr::select(-min_area) %>% 
   pivot_wider(names_from = year, values_from = area) 
 
+mins <- kelp_data_all %>% 
+  filter(year >= 2014 & year < 2017) %>% 
+  dplyr::select(PixelID, year, min_area) %>% 
+  pivot_wider(names_from = year, values_from = min_area) 
+
+# Create new dataframe to store values in 
+df <- maxes %>% 
+  dplyr::select(PixelID)
+
 # Calculate Max and Min value 
-data_area$min <- apply(data_area, 1, FUN = min, na.rm = T)
-data_area$max <- apply(data_area, 1, FUN = max, na.rm = T)
-data_area$mean <- apply(data_area, 1, FUN = max, na.rm = T)
+df$min <- apply(mins, 1, FUN = min, na.rm = T) # Change this so that it is the min of 2014, 2015, 2016
+df$max <- apply(maxes, 1, FUN = mean, na.rm = T)
 
-df <- data_area %>% 
-  select(PixelID, min, max, mean)
-
+##### Calculate Percent Recovery ###############################################
 # Calculate Percent Recovery for each row in the dataset from 2014 to 2021
 df_percent_recovery <- kelp_data_all %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
   filter(year >= 2014) %>% 
-  select(PixelID, year, area) %>% 
+  dplyr::select(PixelID, year, area) %>% 
   left_join(df, by = "PixelID") %>% 
   mutate(percent_recovery = NA)
 
@@ -56,21 +61,27 @@ for (i in 1:nrow(df_percent_recovery )) {
 
 # Join data back 
 kelp_data <- kelp_data_all %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
   filter(year >= 2014) %>% 
   select(PixelID, year, mpa_status, area) %>% 
   left_join(df_percent_recovery, by = c("PixelID", "year", "area"))
 
 ##### Remove lowest Pixels #####################################################
-cutoff_percent <- .3
-cutoff_area <- quantile(data_area$mean, cutoff_percent)
-
 total_area <- sum(kelp_data$area) 
 
-kelp_data <- kelp_data %>% 
-  filter(mean >= cutoff_area)
+cutoff_percent <- .05
+cutoff_area <- quantile(df$max, cutoff_percent) # Based on historical values 
 
-100 - 100*(sum(kelp_data$area)/total_area) # Percent of total removed from the dataset
+cutoff_table <- df %>% 
+  filter(max >= cutoff_area) %>% 
+  mutate(keep = 1)
+
+kelp_data <- kelp_data %>% 
+  left_join(cutoff_table) %>% 
+  filter(keep == 1)
+
+new_area <-  sum(kelp_data$area) 
+
+100 - 100*(new_area/total_area) # Percent of total removed from the dataset
 
 ##### Calculate True Values ####################################################
 # Change global option to not print out message about group summaries 
@@ -89,7 +100,7 @@ true_values <- kelp_data %>%
 
 ##### Bootstrapping ############################################################
 ## Set up:
-set.seed(20) # So the results are repeatable
+set.seed(30) # So the results are repeatable
 
 # Set up variables outside of the loops
 # bootstrap_list <- list()
@@ -100,23 +111,12 @@ kelp_data_r <- kelp_data %>% select(-mpa_status)
 
 all_pixels <- kelp_data$PixelID %>% unique()
 
-#create the cluster
-n_cores <- 2
-
-my.cluster <- parallel::makeCluster(n_cores)
-
-#check cluster definition (optional)
-print(my.cluster)
-
-#register it to be used by %dopar%
-doParallel::registerDoParallel(cl = my.cluster)
-foreach::getDoParWorkers()
-
 # within the for loop 
 start <- Sys.time()
-bootstrap_list <- foreach (j = 1:10000) %dopar% {
-  require(tidyverse)
-  
+bootstrap_list <- c()
+
+for(j in 1:10000) {
+
   # Sample random pixels that will overlap w/ MPAs 
   r_pixels <- sample(all_pixels, size = nrow(points_in_mpas), replace = F) # number of pixels originally overlapping with MPAs 
   
@@ -163,12 +163,9 @@ bootstrap_list <- foreach (j = 1:10000) %dopar% {
     select(-c(None, Partial, Full)) %>% 
     ungroup()
   
-  values
+  bootstrap_list[[j]] <- values
 }
 end <- Sys.time()
-
-start - end
-parallel::stopCluster(cl = my.cluster)
 
 #### Processing Results ########################################################
 bootstrap_df <- do.call(rbind.data.frame, bootstrap_list)
@@ -212,7 +209,7 @@ print('now attempting to make figure')
 plot1 <- results_long %>% 
   ggplot(aes(x = year, y = -log10(pvalues), group = Comparison)) +
   geom_point(aes(color = Comparison, shape = Comparison), size = 2) +
-  geom_hline(yintercept = -log10(0.05/(18))) +
+  geom_hline(yintercept = -log10(0.05/(24))) +
   geom_hline(yintercept = -log10(0.05/3), linetype = "dashed") +
   scale_color_manual(values=c('#FF5C00', '#999999','#000EDD')) +
   theme_bw() +

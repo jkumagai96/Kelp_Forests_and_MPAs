@@ -1,4 +1,4 @@
-# Date: April 20th 2023
+# Date: May 10th 2023
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Bootstrap - Permutation approach based on difference in percent recovery instead of kelp area 
            # Spitting the data by region instead of treating it all the same
@@ -21,25 +21,33 @@ Calculate_percent_recovery <- function(x, min_v, max_v) {
   return(value)
 }
 
-##### Calculate Percent Recovery ###############################################
-data_area <- kelp_data_all %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
+##### Format Data ##############################################################
+data_area_long <- kelp_data_all %>% 
   filter(year < 2014) %>% 
-  select(PixelID, year, area) %>% 
+  dplyr::select(PixelID, year, area, min_area) 
+
+maxes <- data_area_long %>% 
+  dplyr::select(-min_area) %>% 
   pivot_wider(names_from = year, values_from = area) 
 
+mins <- kelp_data_all %>% 
+  filter(year >= 2014 & year < 2017) %>% 
+  dplyr::select(PixelID, year, min_area) %>% 
+  pivot_wider(names_from = year, values_from = min_area) 
+
+# Create new dataframe to store values in 
+df <- maxes %>% 
+  dplyr::select(PixelID)
+
 # Calculate Max and Min value 
-data_area$min <- apply(data_area, 1, FUN = min, na.rm = T)
-data_area$max <- apply(data_area, 1, FUN = max, na.rm = T)
+df$min <- apply(mins, 1, FUN = min, na.rm = T) # Change this so that it is the min of 2014, 2015, 2016
+df$max <- apply(maxes, 1, FUN = mean, na.rm = T)
 
-df <- data_area %>% 
-  select(PixelID, min, max)
-
-# Calculate Percent Recovery for each row in the dataset from 2016 to 2021
+##### Calculate Percent Recovery ###############################################
+# Calculate Percent Recovery for each row in the dataset from 2014 to 2021
 df_percent_recovery <- kelp_data_all %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  filter(year >= 2016) %>% 
-  select(PixelID, year, area) %>% 
+  filter(year >= 2014) %>% 
+  dplyr::select(PixelID, year, area) %>% 
   left_join(df, by = "PixelID") %>% 
   mutate(percent_recovery = NA)
 
@@ -55,11 +63,9 @@ for (i in 1:nrow(df_percent_recovery )) {
 
 # Join data back 
 kelp_data <- kelp_data_all %>% 
-  filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  filter(year >= 2016) %>% 
-  select(PixelID, year, mpa_status, region) %>% 
-  left_join(df_percent_recovery, by = c("PixelID", "year"))
-
+  filter(year >= 2014) %>% 
+  select(PixelID, year, mpa_status, area, region) %>% 
+  left_join(df_percent_recovery, by = c("PixelID", "year", "area"))
 
 ##### Structure Data ###########################################################
 kelp_data_south <- kelp_data %>% 
@@ -100,7 +106,7 @@ set.seed(30) # So the results are repeatable
 
 # Set up variables outside of the loops
 bootstrap_list <- list()
-years <- 2016:2021
+years <- 2014:2021
 
 # Remove original mpa_status from kelp_data
 kelp_data_r <- kelp_data_south %>% select(-mpa_status)
@@ -233,7 +239,7 @@ set.seed(50) # So the results are repeatable
 
 # Set up variables outside of the loops
 bootstrap_list <- list()
-years <- 2016:2021
+years <- 2014:2021
 
 # Remove original mpa_status from kelp_data
 kelp_data_r <- kelp_data_central %>% select(-mpa_status)
@@ -351,7 +357,7 @@ plot1 <- results_long %>%
   scale_color_manual(values=c('#FF5C00', '#999999','#000EDD')) +
   theme_bw() +
   theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = c(2016, 2017, 2018, 2019, 2020, 2021)) +
+  scale_x_continuous(breaks = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021)) +
   labs(y = "-log10(P values)", x = "Year") 
 
 # Export 
@@ -378,7 +384,7 @@ plot2 <- results_long %>%
   scale_color_manual(values=c('#FF5C00', '#999999','#000EDD')) +
   theme_bw() +
   theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = c(2016, 2017, 2018, 2019, 2020, 2021)) +
+  scale_x_continuous(breaks = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021)) +
   labs(y = "-log10(P values)", x = "Year") 
 
 # Export

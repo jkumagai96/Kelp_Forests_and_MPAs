@@ -35,6 +35,9 @@ cold_spells <- readRDS("Processed_data/SST/CS_cummulative_intensity_1km.rds")
 
 heat_waves <- readRDS("Processed_data/SST/MHW_cummulative_intensity_1km.rds") 
 
+# Count of 30x30 pixels within each 1km2 pixel
+count_30x30 <- read.csv("Processed_data/data_tables/Count_30x30_pixels.csv")
+
 ##### Formatting ###############################################################
 # Select needed attributes from MPAs
 mpas <- mpas_original %>% 
@@ -50,17 +53,11 @@ station_points <- st_as_sf(station_data,
 # Make sure the projections match 
 raster::crs(station_points) == raster::crs(mpas)
 
-
 ##### Processing ###############################################################
 # Spatial intersect between mpas and points to get all points within mpas 
 points_in_mpas <- st_intersection(station_points, mpas) %>% 
   dplyr::select(PixelID, mpa_status, Site_ID_12, Estab_Yr_1, AreaMar_12) %>% 
   st_drop_geometry()
-
-# Export points_in_mpas so it can be used in the permutation analysis 
-write.csv(points_in_mpas, 
-          "Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv",
-          row.names = F)
 
 # Join data with kelp data 
 kelp_w_mpas <- left_join(kelp_data, points_in_mpas, by = "PixelID") 
@@ -101,7 +98,6 @@ final_data <- kelp_w_mpas_adjusted %>%
   dplyr::select(-Estab_Yr_1)
 
 ##### Add in Human Gravity Index ###############################################
-
 final_data <- final_data %>% 
   left_join(human_gravity, by = c("long", "lat")) %>%  # NA's are values > 50km
   mutate(gravity = replace_na(gravity, 0)) # 11% of the data are zero's now 
@@ -130,8 +126,28 @@ final_data <- final_data %>%
   mutate(region = ifelse(lat > 37.1819, "North_Central_Coast", region)) %>% 
   mutate(region = ifelse(lat > 39.0044, "North_Coast", region))
 
-##### Export ###################################################################
+##### Remove pixels with 5 or less 30x30 pixels and other regions ##############
+final_data <- final_data %>% 
+  left_join(count_30x30, by = "PixelID") %>% 
+  filter(count > 5) %>% 
+  filter(region == "South_Coast" | region == "Central_Coast") # Filter by regions 
 
+region_data <- final_data %>% 
+  select(PixelID, region) %>% 
+  unique()
+
+# Filter poitns in mpas by regions
+points_in_mpas <- points_in_mpas %>% 
+  left_join(region_data, by = "PixelID") %>% 
+  na.omit(region)
+
+##### Export ###################################################################
+# Export points_in_mpas so it can be used in the permutation analysis 
+write.csv(points_in_mpas, 
+          "Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv",
+          row.names = F)
+
+# Export final data 
 write.csv(final_data, "Processed_data/data_tables/kelp_data_w_mpas_per_quarter.csv", 
           row.names = F)
 
