@@ -107,7 +107,7 @@ true_values <- kelp_data %>%
 
 ##### Bootstrapping ############################################################
 ## Set up:
-set.seed(456) # So the results are repeatable
+set.seed(20) # So the results are repeatable
 
 # Set up variables outside of the loops
 years <- 1997:2002

@@ -100,7 +100,7 @@ true_values <- kelp_data_south %>%
 
 ##### Bootstrapping ############################################################
 ## Set up:
-set.seed(30) # So the results are repeatable
+set.seed(20) # So the results are repeatable
 
 # Set up variables outside of the loops
 bootstrap_list <- list()
@@ -222,8 +222,6 @@ true_values <- kelp_data_central %>%
   select(-c(None, Partial, Full))
 
 ## Set up:
-set.seed(50) # So the results are repeatable
-
 # Set up variables outside of the loops
 bootstrap_list <- list()
 years <- 2014:2021

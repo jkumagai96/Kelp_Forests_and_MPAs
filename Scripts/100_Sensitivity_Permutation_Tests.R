@@ -100,7 +100,7 @@ true_values <- kelp_data %>%
 
 ##### Bootstrapping ############################################################
 ## Set up:
-set.seed(30) # So the results are repeatable
+set.seed(20) # So the results are repeatable
 
 # Set up variables outside of the loops
 bootstrap_list <- list()
