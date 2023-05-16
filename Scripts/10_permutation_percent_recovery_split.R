@@ -76,11 +76,11 @@ kelp_data_central <- kelp_data %>%
 a <- kelp_data %>% select(region, PixelID) %>% distinct()
 
 points_in_mpas_south <- points_in_mpas %>% 
-  left_join(a, by = "PixelID") %>% 
+  #left_join(a, by = "PixelID") %>% 
   filter(region == "South_Coast")
 
 points_in_mpas_central <- points_in_mpas %>% 
-  left_join(a, by = "PixelID") %>% 
+  #left_join(a, by = "PixelID") %>% 
   filter(region == "Central_Coast")
 
 ##### Calculate True Values for south region ###################################
