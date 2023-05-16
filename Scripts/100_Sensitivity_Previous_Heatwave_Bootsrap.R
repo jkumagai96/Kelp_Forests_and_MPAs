@@ -8,8 +8,6 @@
 # Load Packages
 library(tidyverse)
 library(sf)
-library(doParallel)
-library(foreach)
 
 # Load Data
 kelp_raw <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
@@ -112,7 +110,6 @@ true_values <- kelp_data %>%
 set.seed(456) # So the results are repeatable
 
 # Set up variables outside of the loops
-# bootstrap_list <- list()
 years <- 1997:2002
 
 # Remove original mpa_status from kelp_data
@@ -120,22 +117,10 @@ kelp_data_r <- kelp_data %>% select(-mpa_status)
 
 all_pixels <- kelp_data$PixelID %>% unique()
 
-#create the cluster
-n_cores <- 2
-
-my.cluster <- parallel::makeCluster(n_cores)
-
-#check cluster definition (optional)
-print(my.cluster)
-
-#register it to be used by %dopar%
-doParallel::registerDoParallel(cl = my.cluster)
-foreach::getDoParWorkers()
-
+bootstrap_list <- list()
 # within the for loop 
 start <- Sys.time()
-bootstrap_list <- foreach (j = 1:10000) %dopar% {
-  require(tidyverse)
+for (j in 1:10000) {
   
   # Sample random pixels that will overlap w/ MPAs 
   r_pixels <- sample(all_pixels, size = nrow(points_in_mpas_loop), replace = F) # number of pixels originally overlapping with MPAs 
@@ -161,12 +146,9 @@ bootstrap_list <- foreach (j = 1:10000) %dopar% {
     select(-c(None, Partial, Full)) %>% 
     ungroup()
   
-  values
+  bootstrap_list[[j]] <- values
 }
 end <- Sys.time()
-
-start - end
-parallel::stopCluster(cl = my.cluster)
 
 #### Processing Results ########################################################
 bootstrap_df <- do.call(rbind.data.frame, bootstrap_list)

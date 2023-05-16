@@ -103,7 +103,7 @@ true_values <- kelp_data %>%
 set.seed(30) # So the results are repeatable
 
 # Set up variables outside of the loops
-# bootstrap_list <- list()
+bootstrap_list <- list()
 years <- 2014:2021
 
 # Remove original mpa_status from kelp_data
@@ -113,7 +113,6 @@ all_pixels <- kelp_data$PixelID %>% unique()
 
 # within the for loop 
 start <- Sys.time()
-bootstrap_list <- c()
 
 for(j in 1:10000) {
 
