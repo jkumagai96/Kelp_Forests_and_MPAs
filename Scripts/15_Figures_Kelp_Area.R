@@ -6,6 +6,8 @@
 ###### Set up ##################################################################
 # Load Packages
 library(tidyverse)
+library(scales)
+library(cowplot)
 
 # Load Data
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
@@ -39,17 +41,43 @@ df <- kelp_data_all %>%
   group_by(year) %>% 
   summarise(mean_kelp_area = mean(area),
             median_kelp_area = median(area),
-            sd_kelp_area = sd(area)) 
+            sum_kelp_area = sum(area)) 
 
+# Mean kelp area through time 
 ggplot(df, aes(x = year, y = mean_kelp_area)) + 
   geom_line(color = "green") +
   geom_point(color = "darkgreen") +
   theme_bw() 
-  
+
+# Median kelp area through time 
 ggplot(df, aes(x = year, y = median_kelp_area)) + 
   geom_line(color = "orange") +
   geom_point(color = "darkorange") +
   theme_bw() 
+
+# Total kelp area through time 
+ggplot(df, aes(x = year, y = sum_kelp_area)) + 
+  geom_line(color = "black") +
+  geom_point(color = "grey50") +
+  theme_bw() 
+
+# Combo plot of mean and median through time
+plot_all_sum <- ggplot(df) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+          ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "All", fontface = 2, 
+           x = 2018, y = 55) + 
+  geom_line(aes(x = year, y = sum_kelp_area/1e6)) +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Total Kelp Area '(km^2))) +
+  xlab("Year")
+
 
 # Kelp area through time split by region 
 df2 <- kelp_data_all %>% 
@@ -69,32 +97,105 @@ df3 <- kelp_data_all %>%
   summarise(mean_kelp_area = mean(area),
             median_kelp_area = median(area)) 
 
-ggplot(df3, aes(x = year, y = mean_kelp_area, group = mpa_status)) + 
-  geom_line(aes(color=mpa_status))+
-  geom_point(aes(color=mpa_status)) + 
-  theme_bw() 
+group.colors <- c(Full = "#440154", None = "#FFBA00", Partial ="#21918c")
 
-ggplot(df3, aes(x = year, y = median_kelp_area, group = mpa_status)) + 
+plot_all_split_median <- ggplot(df3, aes(x = year, y = median_kelp_area, group = mpa_status)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "All", fontface = 2, 
+           x = 2018, y = 45000) + 
   geom_line(aes(color=mpa_status))+
-  geom_point(aes(color=mpa_status)) + 
-  theme_bw() 
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Median Kelp Area '(m^2))) +
+  xlab("Year")
+
+plot_all_split_avg <- ggplot(df3, aes(x = year, y = mean_kelp_area, group = mpa_status)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "All", fontface = 2, 
+           x = 2018, y = 95000) + 
+  geom_line(aes(color=mpa_status))+
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Mean Kelp Area '(m^2))) +
+  xlab("Year")
 
 # Just looking at southern california, kelp area through time split by mpa stauts
 df4 <- kelp_data_all %>% 
   filter(region == "South_Coast") %>% 
   group_by(year, mpa_status) %>% 
   summarise(mean_kelp_area = mean(area),
-            median_kelp_area = median(area)) 
+            median_kelp_area = median(area),
+            sum_kelp_area = sum(area))
 
-ggplot(df4, aes(x = year, y = mean_kelp_area, group = mpa_status)) + 
-  geom_line(aes(color=mpa_status))+
-  geom_point(aes(color=mpa_status)) + 
-  theme_bw() 
+df4_b <- kelp_data_all %>% 
+  filter(region == "South_Coast") %>% 
+  group_by(year) %>% 
+  summarise(mean_kelp_area = mean(area),
+            median_kelp_area = median(area),
+            sum_kelp_area = sum(area))
 
-ggplot(df4, aes(x = year, y = median_kelp_area, group = mpa_status)) + 
+plot_south_all_sum <- ggplot(df4_b, aes(x = year, y = sum_kelp_area/1e6)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "South", fontface = 2, 
+           x = 2018, y = 35) + 
+  geom_line()+
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  ylab(bquote('Total Kelp Area '(km^2))) +
+  xlab("Year")
+
+plot_south_split_median <- ggplot(df4, aes(x = year, y = median_kelp_area, group = mpa_status)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "South", fontface = 2, 
+           x = 2018, y = 40000) + 
   geom_line(aes(color=mpa_status))+
-  geom_point(aes(color=mpa_status)) + 
-  theme_bw() 
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Median Kelp Area '(m^2))) +
+  xlab("Year")
+
+plot_south_split_avg <- ggplot(df4, aes(x = year, y = mean_kelp_area, group = mpa_status)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "South", fontface = 2, 
+           x = 2018, y = 40000) + 
+  geom_line(aes(color=mpa_status))+
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Mean Kelp Area '(m^2))) +
+  xlab("Year")
 
 # Just looking at central california, kelp area through time split by mpa stauts
 df5 <- kelp_data_all %>% 
@@ -103,12 +204,95 @@ df5 <- kelp_data_all %>%
   summarise(mean_kelp_area = mean(area),
             median_kelp_area = median(area)) 
 
-ggplot(df5, aes(x = year, y = mean_kelp_area, group = mpa_status)) + 
-  geom_line(aes(color=mpa_status))+
-  geom_point(aes(color=mpa_status)) + 
-  theme_bw() 
+df5_b <- kelp_data_all %>% 
+  filter(region == "Central_Coast") %>% 
+  group_by(year) %>% 
+  summarise(mean_kelp_area = mean(area),
+            median_kelp_area = median(area),
+            sum_kelp_area = sum(area))
 
-ggplot(df5, aes(x = year, y = median_kelp_area, group = mpa_status)) + 
+plot_central_all_sum <- ggplot(df5_b, aes(x = year, y = sum_kelp_area/1e6)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "Central", fontface = 2, 
+           x = 2018, y = 35) + 
+  geom_line()+
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  ylab(bquote('Total Kelp Area '(km^2))) +
+  xlab("Year")
+
+plot_central_split_median <- ggplot(df5, aes(x = year, y = median_kelp_area, group = mpa_status)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "Central", fontface = 2, 
+           x = 2018, y = 200000) + 
   geom_line(aes(color=mpa_status))+
-  geom_point(aes(color=mpa_status)) + 
-  theme_bw() 
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Median Kelp Area '(m^2))) +
+  xlab("Year")
+
+plot_central_split_avg <- ggplot(df5, aes(x = year, y = mean_kelp_area, group = mpa_status)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 1997, xmax = 1998,
+           ymin = -Inf, ymax = Inf) +
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "Central", fontface = 2, 
+           x = 2018, y = 200000) + 
+  geom_line(aes(color=mpa_status))+
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  theme(legend.position = "none") + 
+  ylab(bquote('Mean Kelp Area '(m^2))) +
+  xlab("Year")
+
+plot_medians <- plot_grid(plot_all_sum, 
+          plot_all_split_median, 
+          plot_central_all_sum,
+          plot_central_split_median,
+          plot_south_all_sum,
+          plot_south_split_median,
+          ncol = 2,
+          labels = c('A', 'B', 'C', 'D', 'E', 'F'), 
+          label_size = 12)
+
+plot_averages <- plot_grid(plot_all_sum, 
+          plot_all_split_avg, 
+          plot_central_all_sum,
+          plot_central_split_avg,
+          plot_south_all_sum,
+          plot_south_split_avg,
+          ncol = 2,
+          labels = c('A', 'B', 'C', 'D', 'E', 'F'), 
+          label_size = 12)
+
+##### Export ###################################################################
+png("Figures/Kelp_area_medians.png", width = 10, height = 10, 
+    units = "in", res = 600)
+plot_medians
+dev.off() 
+
+png("Figures/Kelp_area_averages.png", width = 10, height = 10, 
+    units = "in", res = 600)
+plot_averages
+dev.off() 
+
+##### Change in Kelp Area ######################################################
+kelp_data_all
+# mean is just the mean of the four quarters 
+
+

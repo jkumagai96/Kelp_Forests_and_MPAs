@@ -1,4 +1,4 @@
-# Date: April 13th 2023
+# Date: May 17th 2023
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Try to calculate recovery time 
 # BIO 202: Ecological Statistics
@@ -20,15 +20,43 @@ baseline_data <- kelp_data_all %>%
   summarize(mean_area = mean(area, na.rm = T),
             sd_area = sd(area, na.rm = T), #)
             one_sd_low = mean_area - sd_area) #%>% 
-  #filter(one_sd_low > 0)
-
-# Adjust kelp data all
-kelp_data_all <- kelp_data_all[kelp_data_all$PixelID %in% baseline_data$PixelID, ]
+#filter(one_sd_low > 0)
 
 # Create a dataset with the post heat wave data (2017-2021)
 post_hw_data <- kelp_data_all %>% 
   dplyr::select(PixelID, year, area) %>% 
   filter(year > 2016)
+
+##### Remove lowest Pixels #####################################################
+# ADJUST THIS SECTION!
+total_area <- sum(post_hw_data$area) 
+
+maxes <- kelp_data_all %>% 
+  filter(year < 2014) %>% 
+  dplyr::select(PixelID, year, area) %>%  
+  pivot_wider(names_from = year, values_from = area) 
+
+# Create new dataframe to store values in 
+df <- maxes %>% 
+  dplyr::select(PixelID)
+
+# Calculate mean of maxes value 
+df$max <- apply(maxes, 1, FUN = mean, na.rm = T)
+
+cutoff_percent <- .5
+cutoff_area <- quantile(df$max, cutoff_percent) # Based on historical values 
+
+cutoff_table <- df %>% 
+  filter(max >= cutoff_area) %>% 
+  mutate(keep = 1)
+
+post_hw_data <- post_hw_data %>% 
+  left_join(cutoff_table) %>% 
+  filter(keep == 1)
+
+new_area <- sum(post_hw_data$area) 
+
+100 - 100*(new_area/total_area) # Percent of total removed from the dataset
 
 ##### Load Functions ###########################################################
 # Small function to determine if a value is within range, used in the next function
@@ -121,8 +149,8 @@ start - end
 results # Final results
 
 ##### Export results ###########################################################
-write.csv(results, "Processed_data/data_tables/recovery_time.csv", row.names = F)
-
+export_file_name <- paste0("Processed_data/data_tables/recovery_time_", cutoff_percent*100, "percent.csv")
+write.csv(results, export_file_name, row.names = F)
 
 ##### Explore results ##########################################################
 results %>% 
@@ -133,10 +161,9 @@ n_not_recovered <- sum(is.na(results$Recovery_time)) # NA's mean that they have 
 
 # Questions: 
 ## Do these percentages change with protection?
-## Do these percentages change with region?
 
 pixel_properties <- kelp_data_all %>% 
-  filter(year == 2016) %>% 
+  filter(year == 2017) %>% 
   dplyr::select(lat, long, region, PixelID, mpa_status) %>% 
   distinct() %>% 
   full_join(results, by = "PixelID")
@@ -158,7 +185,7 @@ df_protection <- cum_percent_group(df_protection, mpa_status, percentage)
 
 
 plot1 <- ggplot(data = df_protection, aes(x = Recovery_time, 
-                                 y = cum_perc, color = mpa_status)) +
+                                          y = cum_perc, color = mpa_status)) +
   geom_point() +
   geom_line() +
   #ylim(0, .15) +
@@ -169,7 +196,7 @@ plot1 <- ggplot(data = df_protection, aes(x = Recovery_time,
 
 plot1
 
-exportfile <- paste0("Figures/Recovery_time_", sd_limit, "SD.png")
+exportfile <- paste0("Figures/Recovery_time_", cutoff_percent*100, "percent.png")
 png(exportfile, 
     units = "in", 
     height = 4, 
@@ -177,63 +204,3 @@ png(exportfile,
     res = 300)
 plot1
 dev.off()
-
-# Investigating region
-
-#n_region <- pixel_properties %>% 
-#  count(region) %>% 
-#  rename(n_total = n)
-
-#df_region <- pixel_properties %>% 
-#  group_by(region) %>% 
-#  count(Recovery_time) %>% 
-#  rename(n_pixels = n) %>% 
-#  left_join(n_region, by = "region") %>% 
-#  mutate(percentage = n_pixels/n_total) %>% 
-#  mutate(region = factor(region, levels = c("Central_Coast", "South_Coast")))
-
-
-#df_region <- cum_percent_group(df_region, region, percentage)
-
-#plot2 <- ggplot(data = df_region, aes(x = Recovery_time, 
-#                                 y = cum_perc, color = region)) +
-#  geom_point() +
-#  geom_line() +
-#  scale_y_continuous(labels = scales::percent) +
-#  theme_bw() +
-#  labs(x = "Recovery Time (years)", y = "Cummulative Percent of Pixels Recovered") 
-
-#png("Figures/Recovery_time_region_nozeros.png", 
-#    units = "in", 
-#    height = 4, 
-#    width = 6, 
-#    res = 300)
-#plot2
-#dev.off()
-###### Explore Baseline Data ##############################################
-# Perhaps the standard deviations are higher in areas that are protected or regions
-kelp_data_all %>% 
-  filter(year == 2016) %>% 
-  dplyr::select(lat, long, region, PixelID, mpa_status) %>% 
-  distinct() %>% 
-  full_join(baseline_data, by = "PixelID") %>% 
-  group_by(mpa_status) %>% 
-  summarize(mean_sd_area = mean(sd_area), 
-            mean_area_total = mean(mean_area)) %>% 
-  arrange(mean_area_total)
-# Partial MPAs have the highest mean standard deviations of area, then full, then none 
-# Recovery time is very dependent on the standard deviation :( 
-
-kelp_data_all %>% 
-  filter(year == 2016) %>% 
-  dplyr::select(lat, long, region, PixelID, mpa_status) %>% 
-  distinct() %>% 
-  full_join(baseline_data, by = "PixelID") %>% 
-  group_by(region) %>% 
-  summarize(mean_sd_area = mean(sd_area), 
-            mean_area_total = mean(mean_area)) %>% 
-  arrange(mean_sd_area)
-# Recovery time is dependent on the standard deviation, 
-# but the south coast was able to recover faster for sure 
-
-# Create graphs of the data that went into the baseline data 

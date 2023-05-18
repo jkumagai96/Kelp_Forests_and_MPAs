@@ -233,12 +233,18 @@ kelp_data %>%
   ylim(0, 100)
 
 # box plot seperated by mpa status
-kelp_data %>% 
+group.colors <- c(Full = "#440154", None = "#FFBA00", Partial ="#21918c")
+
+percent_recovery_barplot <- kelp_data %>% 
   mutate(year = as.factor(year)) %>% 
-  ggplot(aes(x = year, y = percent_recovery, fill = mpa_status)) +
-  geom_boxplot() +
-  #geom_point(alpha = 0.2) +
-  ylim(0, 100)
+  ggplot(aes(x = year, y = percent_recovery, fill = mpa_status, color = mpa_status)) +
+  scale_fill_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  geom_boxplot(outlier.alpha = 0.4, outlier.color = "grey20") +
+  ylim(0, 100) +
+  theme_bw() +
+  labs(y = "Percent Recovery", x = "Year")
+percent_recovery_barplot
 
 # points (mean)
 kelp_data %>% 
@@ -256,5 +262,11 @@ kelp_data %>%
   ggplot(aes(x = year, y = med_percent_recovery, color = mpa_status)) +
   geom_line() +
   geom_point()
+
+###### Export ##################################################################
+png("Figures/Percent_Recovery_barplot.png", width = 7, height = 5, 
+    units = "in", res = 600)
+percent_recovery_barplot 
+dev.off() 
 
 print('script is finished')
