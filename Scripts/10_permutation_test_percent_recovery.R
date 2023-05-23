@@ -219,6 +219,12 @@ plot1
 dev.off() 
 
 ### Figure of Percent Recover through time all, then summarized by mpa status
+kelp_data <- kelp_data_all %>% 
+  filter(region == "South_Coast" | region == "Central_Coast") %>% 
+  filter(year >= 2014) %>% 
+  select(PixelID, year, mpa_status, area, region) %>% 
+  left_join(df_percent_recovery, by = c("PixelID", "year", "area"))
+
 kelp_data %>% 
   mutate(year = as.factor(year)) %>% 
   ggplot(aes(x = year, y = percent_recovery)) +
@@ -245,6 +251,18 @@ percent_recovery_barplot <- kelp_data %>%
   theme_bw() +
   labs(y = "Percent Recovery", x = "Year")
 percent_recovery_barplot
+
+# percent recovery split by region
+kelp_data %>% 
+  filter(region == "Central_Coast") %>% 
+  mutate(year = as.factor(year)) %>% 
+  ggplot(aes(x = year, y = percent_recovery, fill = mpa_status, color = mpa_status)) +
+  scale_fill_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  geom_boxplot(outlier.alpha = 0.4, outlier.color = "grey20") +
+  ylim(0, 100) +
+  theme_bw() +
+  labs(y = "Percent Recovery", x = "Year")
 
 # points (mean)
 kelp_data %>% 

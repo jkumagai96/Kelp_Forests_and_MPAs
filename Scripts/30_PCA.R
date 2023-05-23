@@ -51,8 +51,40 @@ png("Figures/Environmental_PCA_biplot_2019.png", width = 7, height = 5,
 plot_biplot 
 dev.off() 
 
-##### Explore MPA age in the PCA! 
+##### Explore MPA age in the PCA! ##############################################
+data <- kelp_data_all %>% 
+  filter(region == "Central_Coast") %>% 
+  filter(mpa_status != "Partial") %>% 
+  filter(year == 1995) %>% 
+  select(PixelID, mpa_status, hsmax, nitrate, temperature, MHW_intensity, CS_intensity,
+         depth, gravity, distance_to_coast) 
 
+data <- na.omit(data) 
 
+data.pca <- prcomp(data[,-c(1,2)], center = TRUE, scale = TRUE)
+summary(data.pca, loadings=TRUE)
 
+screeplot(data.pca, type = "line", main = "Scree plot")
+
+group.colors <- c(Full = "#440154", None = "#FFBA00")
+
+plot_points <- fviz_pca_ind(data.pca, label="Mpa Category", habillage=data$mpa_status,
+                            addEllipses=TRUE, ellipse.level=0.95, palette = group.colors)
+plot_points
+fviz_pca_var(data.pca, col.var = "steelblue")
+
+plot_biplot <- fviz_pca_biplot(data.pca, habillage=data$mpa_status, label = "var",
+                               palette = group.colors,
+                               ggtheme = theme_minimal())
+
+png("Figures/Environmental_PCA_points_Central_Full_1995.png", width = 7, height = 5, 
+    units = "in", res = 600)
+plot_points
+dev.off() 
+
+png("Figures/Environmental_PCA_biplot_Central_Full_1995.png", width = 7, height = 5, 
+    units = "in", res = 600)
+plot_biplot 
+
+dev.off() 
 print("Script is finished")

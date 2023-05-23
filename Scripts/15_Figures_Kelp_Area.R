@@ -292,7 +292,6 @@ plot_averages
 dev.off() 
 
 ##### Change in Kelp Area ######################################################
-kelp_data_all
-# mean is just the mean of the four quarters 
-
+# First the proportion of zeros 
+kelp_data_all$area
 
