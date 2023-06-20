@@ -70,6 +70,7 @@ kelp_data <- kelp_data_all %>%
   select(PixelID, year, mpa_status, area) %>% 
   left_join(df_percent_recovery, by = c("PixelID", "year", "area"))
 
+write.csv(kelp_data, "Processed_data/data_tables/percent_recovery.csv", row.names = F)
 ##### Calculate True Values ####################################################
 # Change global option to not print out message about group summaries 
 options(dplyr.summarise.inform = FALSE)

@@ -15,7 +15,7 @@ kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_an
 
 ##### Format Data ##############################################################
 data <- kelp_data_all %>% 
-  filter(year == 2019) %>% 
+  filter(year == 2021) %>% 
   select(PixelID, mpa_status, hsmax, nitrate, temperature, MHW_intensity, CS_intensity,
          depth, gravity, distance_to_coast) 
 
@@ -32,19 +32,20 @@ group.colors <- c(Full = "#440154", None = "#FFBA00", Partial ="#21918c")
 plot_points <- fviz_pca_ind(data.pca, label="Mpa Category", habillage=data$mpa_status,
              addEllipses=TRUE, ellipse.level=0.95, palette = group.colors)
 plot_points
-fviz_pca_var(data.pca, col.var = "steelblue")
+fviz_pca_var(data.pca, col.var = "darkblue")
 
 plot_biplot <- fviz_pca_biplot(data.pca, habillage=data$mpa_status, label = "var",
                 palette = group.colors,
+                col.var = "darkblue",
                 ggtheme = theme_minimal())
 
 ##### Export ###################################################################
-png("Figures/Environmental_PCA_points_2019.png", width = 7, height = 5, 
+png("Figures/Environmental_PCA_points_2021.png", width = 7, height = 5, 
     units = "in", res = 600)
 plot_points
 dev.off() 
 
-png("Figures/Environmental_PCA_biplot_2019.png", width = 7, height = 5, 
+png("Figures/Environmental_PCA_biplot_2021.png", width = 7, height = 5, 
     units = "in", res = 600)
 plot_biplot 
 dev.off() 
@@ -107,7 +108,7 @@ plot_points <- fviz_pca_ind(data.pca, label="Mpa Category", habillage=data$regio
 plot_points
 fviz_pca_var(data.pca, col.var = "steelblue")
 
-plot_biplot <- fviz_pca_biplot(data.pca, habillage=data$mpa_status, label = "var",
+plot_biplot <- fviz_pca_biplot(data.pca, habillage=data$region, label = "var",
                                palette = group.colors,
                                ggtheme = theme_minimal())
 png("Figures/Environmental_PCA_by_region.png", width = 7, height = 5, 

@@ -369,6 +369,7 @@ plot2 <- results_long %>%
   scale_color_manual(values=c('#FF5C00', '#999999','#000EDD')) +
   theme_bw() +
   theme(legend.position = "bottom") +
+  ylim(0, 6) +
   scale_x_continuous(breaks = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021)) +
   labs(y = "-log10(P values)", x = "Year") 
 

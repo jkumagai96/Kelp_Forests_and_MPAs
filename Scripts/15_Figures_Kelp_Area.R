@@ -71,7 +71,7 @@ plot_all_sum <- ggplot(df) +
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "All", fontface = 2, 
            x = 2018, y = 55) + 
-  geom_line(aes(x = year, y = sum_kelp_area/1e6)) +
+  geom_line(aes(x = year, y = sum_kelp_area/1e6), linewidth = 0.8) +
   scale_y_continuous(label = comma) + 
   theme_bw() +
   theme(legend.position = "none") + 
@@ -125,7 +125,7 @@ plot_all_split_avg <- ggplot(df3, aes(x = year, y = mean_kelp_area, group = mpa_
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "All", fontface = 2, 
            x = 2018, y = 95000) + 
-  geom_line(aes(color=mpa_status))+
+  geom_line(aes(color=mpa_status), linewidth = 0.8)+
   scale_color_manual(values=group.colors, name = "MPA Category") +
   scale_y_continuous(label = comma) + 
   theme_bw() +
@@ -157,7 +157,7 @@ plot_south_all_sum <- ggplot(df4_b, aes(x = year, y = sum_kelp_area/1e6)) +
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "South", fontface = 2, 
            x = 2018, y = 35) + 
-  geom_line()+
+  geom_line(linewidth = 0.8)+
   scale_y_continuous(label = comma) + 
   theme_bw() +
   ylab(bquote('Total Kelp Area '(km^2))) +
@@ -189,7 +189,7 @@ plot_south_split_avg <- ggplot(df4, aes(x = year, y = mean_kelp_area, group = mp
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "South", fontface = 2, 
            x = 2018, y = 40000) + 
-  geom_line(aes(color=mpa_status))+
+  geom_line(aes(color=mpa_status), linewidth = 0.8)+
   scale_color_manual(values=group.colors, name = "MPA Category") +
   scale_y_continuous(label = comma) + 
   theme_bw() +
@@ -220,7 +220,7 @@ plot_central_all_sum <- ggplot(df5_b, aes(x = year, y = sum_kelp_area/1e6)) +
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "Central", fontface = 2, 
            x = 2018, y = 35) + 
-  geom_line()+
+  geom_line(linewidth = 0.8)+
   scale_y_continuous(label = comma) + 
   theme_bw() +
   ylab(bquote('Total Kelp Area '(km^2))) +
@@ -235,7 +235,7 @@ plot_central_split_median <- ggplot(df5, aes(x = year, y = median_kelp_area, gro
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "Central", fontface = 2, 
            x = 2018, y = 200000) + 
-  geom_line(aes(color=mpa_status))+
+  geom_line(aes(color=mpa_status), linewidth = 0.8)+
   scale_color_manual(values=group.colors, name = "MPA Category") +
   scale_y_continuous(label = comma) + 
   theme_bw() +
@@ -252,7 +252,7 @@ plot_central_split_avg <- ggplot(df5, aes(x = year, y = mean_kelp_area, group = 
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "Central", fontface = 2, 
            x = 2018, y = 200000) + 
-  geom_line(aes(color=mpa_status))+
+  geom_line(aes(color=mpa_status), linewidth = 0.8)+
   scale_color_manual(values=group.colors, name = "MPA Category") +
   scale_y_continuous(label = comma) + 
   theme_bw() +
