@@ -13,22 +13,20 @@ library(sf)
 reef_check_inverts <- read.csv("Data/Reef Check Data/Inverts.csv")
 reef_check_fish <- read.csv("Data/Reef Check Data/Fish.csv")
 
-# MPA data 
-mpas_original_south <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp") %>% 
-  st_transform(crs = 4326) %>% 
-  dplyr::select(Site_ID_12, Estab_Yr_1, AreaMar_12, Status_12)
+##### Set up: load data ########################################################
+mpas_original <- st_read("Processed_data/MPAs.shp")
 
 ##### Filter Data ##############################################################
 ### Clean Data
 inverts <- reef_check_inverts %>% 
   distinct() %>%                                    # Remove duplicates 
   filter(region == "California") %>%                # Filter to just California
-  select(-region) %>% 
-  filter(latitude <= 34.4486) %>%                   # Filter to just southern california and add name
-  mutate(region = "South_Coast")%>% 
+  dplyr::select(-region) %>% 
+  filter(latitude <= 37.1819) %>%                   # Filter to just southern and central california and add name
+  mutate(region = ifelse(latitude > 34.4486, "Central_Coast", "South_Coast")) %>% 
   mutate(year = str_sub(date_start, start= -4)) %>% # Add year to the dataset based on the date of the survey
   mutate(year = as.numeric(year)) %>% 
-  select(survey_id, site_name, latitude, longitude, # Variables we want to include
+  dplyr::select(survey_id, site_name, latitude, longitude, # Variables we want to include
          date_start, transect, start_time,
          species, amount, distance,
          year, region) %>% 
@@ -39,15 +37,15 @@ inverts <- reef_check_inverts %>%
 fish <- reef_check_fish %>% 
   distinct() %>%                                    # Remove duplicates 
   filter(region == "California") %>%                # Filter to just California
-  select(-region) %>% 
-  filter(latitude <= 34.4486) %>%                   # Filter to just southern california and add name
-  mutate(region = "South_Coast")%>% 
+  dplyr::select(-region) %>% 
+  filter(latitude <= 37.1819) %>%                   # Filter to just southern and central california and add name
+  mutate(region = ifelse(latitude > 34.4486, "Central_Coast", "South_Coast")) %>% 
   mutate(year = str_sub(date_start, start= -4)) %>% # Add year to the dataset based on the date of the survey
   mutate(year = as.numeric(year)) %>% 
-  select(survey_id, site_name, latitude, longitude, # Variables we want to include
+  dplyr::select(survey_id, site_name, latitude, longitude, # Variables we want to include
          date_start, transect, start_time,
-         species, amount,
-         year, region) %>% 
+         species, amount,region,
+         year, min_cm, max_cm, size_category) %>% 
   mutate(area_searched = 60) %>%                    # Setting the area searched to 60m2 
   filter(amount >= 0) %>%                             # Amount can't be less than zero or NA
   na.omit(site_name)                               # Site has to be named 
@@ -63,7 +61,7 @@ survey_id_fish <- data.frame(unique_survey_id = unique(fish$survey_id),
 
 survey_id_df <- inner_join(survey_id_inverts, survey_id_fish, by = "unique_survey_id") %>% 
   mutate(include_survey = 1) %>% 
-  select(unique_survey_id, include_survey)
+  dplyr::select(unique_survey_id, include_survey)
 
 # Add this as a yes or no to include (left_join), then remove all the other records
 inverts <- inverts %>% 
@@ -75,6 +73,7 @@ fish <- fish %>%
   filter(include_survey == 1)
 
 # This process removes some of the fish records, but none of the inverts
+write.csv(survey_id_df, "Processed_data/data_tables/reef_check_suveyIDs_to_keep.csv", row.names = F)
 
 ##### Standardize and Combine data #############################################
 ### Invertebrates
@@ -83,7 +82,15 @@ distinct_transects <- inverts %>%
   distinct(survey_id, site_name, latitude, longitude, date_start, 
            transect, start_time, year, region, distance)
 
+# Check Sunflower star abundances to assess whether an analysis is possible (11 is not enough)
+sun_stars <- inverts %>% 
+  filter(species == "Sunflower Star" | 
+           species == "Sun Star" | 
+           species == "Sunflower/Sun Star") %>% 
+  filter(amount > 0)
+
 invert_oi_density_per_transect <- inverts %>% 
+  filter(distance > 0) %>% 
   filter(species == "Crowned Urchin" |              # Filter to crowned, purple, and red urchins
            species == "Purple Urchin" | 
            species == "Red Urchin" | 
@@ -97,8 +104,9 @@ invert_oi_density_per_transect <- inverts %>%
   replace_na(list('California Spiny Lobster' = 0, 
                  'Red Urchin' = 0, 
                  'Purple Urchin' = 0, 
-                 'Crowned Urchin' = 0)) # Replaces the NULLs with zeros!!! (DOUBLE CHECK THIS - EMAIL TO REEF CHECK)
+                 'Crowned Urchin' = 0)) # Replaces the NULLs with zeros!!! 
 
+# This dataset is produced to account the sum of urchins per transect 
 urchin_density_per_transect <- inverts %>% 
   filter(species == "Crowned Urchin" |              # Filter to crowned, purple, and red urchins
            species == "Purple Urchin" | 
@@ -171,9 +179,7 @@ surveys <- inner_join(invert_surveys, fish_surveys) # 2 records are removed, but
 
 ##### Join Site Data ###########################################################
 # Select needed attributes from MPAs
-mpas <- mpas_original_south %>% 
-  rename("mpa_status" = "Status_12") %>% 
-  st_transform(crs = 4326) 
+mpas <- mpas_original
 
 # Sites 
 sites <- surveys %>% 
@@ -185,9 +191,13 @@ site_points <- st_as_sf(sites,
                         coords = c("longitude", "latitude"), 
                         crs = 4326) 
 
+# export sites 
+st_write(site_points, "Processed_data/Reef_check_sites.shp", append = TRUE)
+
 # Intersect sites with MPA data to get all the sites within MPAs 
 sites_in_mpas <- st_intersection(site_points, mpas) %>% 
-  st_drop_geometry()
+  st_drop_geometry() %>% 
+  select(-region)
 
 site_points <- site_points %>% 
   left_join(sites_in_mpas, by = "site_name") 
@@ -195,15 +205,14 @@ site_points <- site_points %>%
 site_points$mpa_status[is.na(site_points$mpa_status)] <- "None"
 
 # Make sure the projections match 
-raster::crs(site_points) == raster::crs(mpas)
+st_crs(site_points) == st_crs(mpas)
 
 # Drop geometry
 sites_final <- site_points %>% 
-  st_drop_geometry() %>% 
-  select(-region.x, -region.y)
+  st_drop_geometry()
 
 surveys_w_mpa_data <- surveys %>% 
-  full_join(sites_final, by = "site_name") 
+  full_join(sites_final, by = c("site_name", "region")) 
 
 ##### Account for establishment year ###########################################
 

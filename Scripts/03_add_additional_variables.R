@@ -53,6 +53,9 @@ station_points <- st_as_sf(station_data,
 # Make sure the projections match 
 raster::crs(station_points) == raster::crs(mpas)
 
+# Export MPA data
+st_write(mpas, "Processed_data/MPAs.shp", append = TRUE)
+
 ##### Processing ###############################################################
 # Spatial intersect between mpas and points to get all points within mpas 
 points_in_mpas <- st_intersection(station_points, mpas) %>% 

@@ -15,6 +15,7 @@ data <- read.csv("Processed_data/data_tables/subtidal_surveys.csv")
 ##### Format Data ##############################################################
 
 data <- data |>  
+  filter(region == "South_Coast") |>
   dplyr::select(site_name, year, mpa_status, avg_urchins, avg_sheephead, avg_lobster) |>  
   group_by(site_name, year, mpa_status) |> 
   summarize_all(mean) |> ungroup() |> 
@@ -40,7 +41,7 @@ model_mpa2 <- glmmPQL(
   avg_urchins ~ heatwave*mpa_status, 
   random = ~ 1 + year| site_name, 
   data = data, family = Gamma(link = "log")
-) # No additional variation described by random slopes
+) # Does not converge
 
 # Random intercepts and autocorrelation structure 
 model_mpa3 <- glmmPQL(
@@ -73,7 +74,7 @@ model_tc2 <- glmmPQL(
 ## Obtain residuals, pivot to wide data frame
 resid_ts <- data |> 
   mutate(resid = resid(model_tc1)) |> 
-  select(site_name, year, resid) |> 
+  dplyr::select(site_name, year, resid) |> 
   pivot_wider(names_from = "site_name", values_from = "resid")
 
 ## Compute normal ACF (partial ACF was giving some weird results)
@@ -101,7 +102,8 @@ violin_plot <- acf_df |>
 ## Summary of average autocorrelation
 acf_df |> group_by(lag) |> summarize(acf = mean(acf, na.rm = TRUE))
 
-## Sites with more observations suggest mild autocorrelation
+## Sites with more observations suggest mild autocorrelation 
+# Maurice How do I interpret this? These numbers have all changed
 arima(resid_ts$`120 Reef`, c(1, 0, 0)) # 0.2
 arima(resid_ts$`Casino Point`, c(1, 0, 0)) # 0.7
 arima(resid_ts$`Malaga Cove`, c(1, 0, 0)) # 0.48
@@ -109,14 +111,16 @@ arima(resid_ts$`La Jolla Cove`, c(1, 0, 0)) # 0.52
 arima(resid_ts$`Christmas Tree Cove`, c(1, 0, 0)) # 0.1
 
 ##### Model effects plots #####################################################
+cowplot::plot_grid(
+  plot(emmeans::emmeans(model_mpa1, "mpa_status"), horizontal = FALSE), 
+  plot(emmeans::emmeans(model_mpa1, "heatwave"), horizontal = FALSE)
+)
 
-model1_plots <- plot(ggeffects::ggpredict(model_mpa1))
-cowplot::plot_grid(plotlist = model1_plots, nrow = 2)
+interaction_data <- as.data.frame(emmeans::emmeans(model_mpa1, "heatwave", by = "mpa_status", type = "response"))
 
-model1tc_plots <- plot(ggeffects::ggpredict(model_tc1),
-                       show.title = F, 
-                       color = "blue")
-cowplot::plot_grid(plotlist = model1tc_plots, nrow = 2)
+interaction_data %>% 
+  ggplot(aes(heatwave, color = mpa_status)) + 
+  geom_pointrange(aes(y = response, ymin = lower.CL, ymax = upper.CL), position = position_dodge(width = 0.2), linewidth = 1)
 
 ##### Main effects tests ######################################################
 car::Anova(model_mpa1)
@@ -165,7 +169,7 @@ plot1 <- plotdata |>
   
 
 dat_text <- data.frame(
-  label = c("p < 0.0005", "p = 0.0558", "p = 0.0157", "p = 0.7263"),
+  label = c("p = 0.0001", "p = 0.0212", "p = 0.1502", "p = 0.9081"),
   species = c("sheephead", "sheephead", "lobster", "lobster"),
   model = c("random intercepts", "random intercepts + AR(1)", "random intercepts", "random intercepts + AR(1)")
 )

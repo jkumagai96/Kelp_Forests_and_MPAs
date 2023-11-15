@@ -19,7 +19,4 @@ for (i in 1:length(year)) {
   print(i)
 }
 
-# Clean up files 
-unlink("Data/SST/*.xml")
-
 # Url created from https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdcOisst21Agg_LonPM180.html

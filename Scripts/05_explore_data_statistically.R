@@ -101,3 +101,14 @@ data %>%
 data %>% 
   ggplot(aes(x = year, y = temperature)) +
   geom_point()
+
+##### Investigate differences in average kelp loss #############################
+df <- data %>% 
+  filter(mpa_status == "Full")
+
+df %>% 
+  mutate(timeframe = ifelse(year < 2014, "before", "during")) %>% 
+  mutate(timeframe = ifelse(year > 2016, "after", timeframe)) %>% 
+  group_by(timeframe) %>% 
+  summarise(t_area = mean(area)) %>% 
+  mutate(percent_loss = 1 - (t_area/32292))
