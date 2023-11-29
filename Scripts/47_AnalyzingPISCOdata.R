@@ -24,6 +24,9 @@ sheephead <- readPNG("Figures/Organisms/California_Sheephead.png", native = TRUE
 sheephead_3 <- readPNG("Figures/Organisms/Sheephead_3.png", native = TRUE)
 spiny_lobster <- readPNG("Figures/Organisms/Spiny_Lobster_Figure_t.png", native = TRUE)
 
+# For figures
+group.colors <- c(Full = "#440154", Reference = "#FFBA00", Partial ="#21918c")
+
 ##### Filter Data ##############################################################
 ### Clean Data
 data <- PISCO_data %>% 
@@ -50,11 +53,115 @@ data <- PISCO_data %>%
   mutate(mpa_status = factor(mpa_status, levels = c("Reference", "Partial", "Full"))) %>% 
   filter(total_urchins >= 0)
 
-##### Explore data #############################################################
-group.colors <- c(Full = "#440154", Reference = "#FFBA00", Partial ="#21918c")
 
-# Urchins plot 
+data_w_central <- PISCO_data %>% 
+  left_join(sites_for_joining, by = "SITE") %>% 
+  dplyr::select(SITE,
+                LATITUDE,
+                LONGITUDE,
+                region,
+                mpa_status,
+                Estab_Yr_1,
+                year,
+                fish_SPUL,
+                swath_PANINT,
+                swath_CENCOR,
+                swath_MESFRAAD,
+                swath_STRPURAD
+  ) %>% 
+  filter(year >= 2007,
+         region == "South_Coast" | region == "Central_Coast") %>% 
+  mutate(total_urchins = rowSums(across(c(swath_CENCOR,
+                                          swath_MESFRAAD,
+                                          swath_STRPURAD)))) %>% 
+  drop_na(fish_SPUL, swath_PANINT, swath_CENCOR, swath_MESFRAAD, swath_STRPURAD) %>% 
+  mutate(mpa_status = factor(mpa_status, levels = c("Reference", "Partial", "Full"))) %>% 
+  filter(total_urchins >= 0)
+
+##### Create Urchins Factor Plot ###############################################
+Urchins_factor_plot <- data_w_central %>% 
+  mutate(region = ifelse(region == "Central_Coast", "Central", "Southern")) %>% 
+  group_by(year, mpa_status, region) %>% 
+  summarise(Red = mean(swath_MESFRAAD), 
+            Purple = mean(swath_STRPURAD)) %>% 
+  pivot_longer(Red:Purple, names_to = "species", 
+               values_to = "Density") %>% 
+  ggplot(aes(x = year, y = Density, color = mpa_status)) +
+  geom_line(linewidth = 1) +
+  facet_grid(vars(region), vars(species)) +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  ylab(bquote('Urchins per 60' ~ m^2)) +
+  xlab("Year") +
+  annotate("rect", fill = "red", alpha = 0.2, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+Urchins_factor_plot
+
+red_urchins <- data_w_central %>% 
+  mutate(region = ifelse(region == "Central_Coast", "Central", "Southern")) %>% 
+  group_by(year, mpa_status, region) %>% 
+  summarise(Red = mean(swath_MESFRAAD), 
+            Red_sd = std(swath_MESFRAAD)) %>% 
+  ggplot(aes(x = year, y = Red, color = mpa_status)) +
+  geom_line(linewidth = 1) +
+  geom_errorbar(aes(ymin = Red - Red_sd, 
+                    ymax = Red + Red_sd), 
+                width = 0.2, 
+                linewidth = .5, 
+                alpha = 1) +
+  facet_grid(vars(region)) +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  ylab(bquote('Red Urchins per 60' ~ m^2)) +
+  xlab("Year") +
+  annotate("rect", fill = "red", alpha = 0.2, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
+  theme_bw() +
+  theme(legend.position = "none")
+red_urchins
+
+purple_urchins <- data_w_central %>% 
+  mutate(region = ifelse(region == "Central_Coast", "Central", "Southern")) %>% 
+  group_by(year, mpa_status, region) %>% 
+  summarise(Purple = mean(swath_STRPURAD), 
+            Purple_sd = std(swath_STRPURAD)) %>% 
+  ggplot(aes(x = year, y = Purple, color = mpa_status)) +
+  geom_line(linewidth = 1) +
+  geom_errorbar(aes(ymin = Purple - Purple_sd, 
+                    ymax = Purple + Purple_sd), 
+                width = 0.2, 
+                linewidth = .5, 
+                alpha = 1) +
+  facet_grid(vars(region)) +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  ylab(bquote('Purple Urchins per 60' ~ m^2)) +
+  xlab("Year") +
+  annotate("rect", fill = "red", alpha = 0.2, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
+  theme_bw() +
+  theme(legend.position = c(.2, .85))
+
+purple_urchins
+
+combo_urchin_plot <- cowplot::plot_grid(purple_urchins, red_urchins)
+
+##### Explore data #############################################################
+
+# Urchins plot data for southern California 
 urchin_data <- data %>% 
+  group_by(year, mpa_status) %>%
+  summarize(avg_urchins = mean(total_urchins),
+            se_urchins = std(total_urchins))
+
+# Urchins plot data for central California 
+urchin_central_data <- data_w_central %>%
+  filter(region == "Central_Coast") %>% 
   group_by(year, mpa_status) %>%
   summarize(avg_urchins = mean(total_urchins),
             se_urchins = std(total_urchins))
@@ -176,6 +283,11 @@ png("Figures/Urchins_sheephead_lobsters_PISCO.png", width = 12, height = 8,
 combo_plot
 dev.off() 
 
+png("Figures/Urchins_PISCO.png", width = 9, height = 6, 
+    units = "in", res = 600)
+combo_urchin_plot
+dev.off()
+
 ##### Statistics ###############################################################
 # Are the differences seen in the urchin and lobster plots significant?
 # Simple ANOVA on lobster
@@ -231,11 +343,14 @@ post_test <- glht(u_aov,
 
 summary(post_test)
 
+
 ##### Linear Regression Statistics #############################################
 library("MASS")
 library("ggeffects")
 library("nlme")
 library("emmeans")
+library("DHARMa")
+library("glmmTMB")
 
 glm_data <- data %>% 
   mutate(
@@ -244,76 +359,130 @@ glm_data <- data %>%
     site_name = factor(SITE), 
     year_fct = factor(year)
   )
+glm_data2 <- glm_data
+glm_data2$total_urchins[glm_data2$total_urchins == 0] <- min(glm_data2$total_urchins[glm_data2$total_urchins != 0])
 
-glm_data$total_urchins[glm_data$total_urchins == 0] <- min(glm_data$total_urchins[glm_data$total_urchins != 0])
-
-glm_data2 %>% 
-  left_join(PISCO_biomass_data, by = )
-
+# Central california data 
+glm_data3 <- data_w_central %>% 
+  mutate(
+    heatwave = case_when(year < 2014 ~ "before", year > 2016 ~ "after", .default = "during"),
+    heatwave = factor(heatwave, levels = c("before", "during", "after")), 
+    site_name = factor(SITE), 
+    year_fct = factor(year)
+  )
 
 # Model 1 - Random intercepts
-model_mpa1 <- glmmPQL(
-  total_urchins ~ heatwave*mpa_status, 
-  random = ~ 1 | site_name, 
-  data = glm_data, family = Gamma(link = "log")
+model_mpa1 <- glmmTMB(
+  total_urchins ~ heatwave*mpa_status + 
+    (1 | site_name), 
+  data = glm_data, 
+  family  = tweedie(link = "log")
 )
 
 model_mpa2 <- glmmPQL(
   total_urchins ~ heatwave*mpa_status, 
   random = ~ 1 + year| site_name, 
-  data = glm_data, family = Gamma(link = "log")
+  data = glm_data2, family = Gamma(link = "log")
 ) # Does not converge
 
 # Random intercepts and autocorrelation structure 
-model_mpa3 <- glmmPQL(
-  total_urchins ~ heatwave*mpa_status, 
-  random = ~ 1 | site_name, 
-  correlation = corAR1(form = ~ year | site_name),
-  data = glm_data, family = Gamma(link = "log")
+model_mpa3 <- glmmTMB(
+  total_urchins ~ heatwave*mpa_status + 
+    (1 | site_name) +
+    ar1(0 + year_fct | site_name), 
+  data = glm_data, 
+  family  = tweedie(link = "log")
 )
 
-plot(model_mpa1) # Plot residuals 
+model_mpa1_central <- glmmTMB(
+  total_urchins ~ heatwave*mpa_status + 
+    (1 | site_name),
+  data = glm_data3, 
+  family  = tweedie(link = "log")
+)
+
+  
+  
+# DHARMa package 
+simulationOutput_mpa_m1 <- simulateResiduals(model_mpa1, plot = F)
+plot(simulationOutput_mpa_m1)
 car::Anova(model_mpa1) # Compares models with vs. without terms to each other 
 summary(model_mpa1)
 
-plot(model_mpa3)
+# Model 3
+simulationOutput_mpa_m3 <- simulateResiduals(model_mpa3, plot = F)
+plot(simulationOutput_mpa_m3)
 car::Anova(model_mpa3)
 summary(model_mpa3)
+
+AIC(model_mpa1, model_mpa3) # Including the autoregressive function reduces AIC
 
 # Perhaps we can conclude that the interaction between the heatwave and protection status is highly significant
 
 # Random intercepts
-model_tc1 <- glmmPQL(
-  total_urchins ~ fish_SPUL + swath_PANINT,
-  random = ~ 1 | site_name, 
-  data = glm_data, family = Gamma(link = "log")
+model_tc1 <- glmmTMB(
+  total_urchins ~ poly(fish_SPUL, 2) + poly(swath_PANINT, 2) + (1 | site_name), 
+  data = glm_data, family = tweedie(link = "log")
+) # residuals look best and AIC is not different 
+
+# model_tc1_1 <- glmmTMB(
+#   total_urchins ~ fish_SPUL + swath_PANINT + (1 | site_name), 
+#   data = glm_data, family = tweedie(link = "log")
+# )
+# 
+# model_tc1_2 <- glmmTMB(
+#   total_urchins ~ poly(fish_SPUL, 2) + swath_PANINT + (1 | site_name), 
+#   data = glm_data, family = tweedie(link = "log")
+# )
+# 
+# AIC(model_tc1, model_tc1_1, model_tc1_2)
+# Random intercepts and autocorrelation structure
+model_tc2 <- glmmTMB(
+  total_urchins ~ poly(fish_SPUL, 2) + poly(swath_PANINT, 2) + (1 | site_name) + 
+  ar1(0 + year_fct | site_name),
+  data = glm_data, family = tweedie(link = "log")
 )
 
-# Random intercepts and autocorrelation structure
-model_tc2 <- glmmPQL(
-  total_urchins ~ fish_SPUL + swath_PANINT,
-  random = ~ 1 | site_name, 
-  correlation = corAR1(form = ~ year | site_name),
-  data = glm_data, family = Gamma(link = "log")
-)
+# model_tc2_1 <- glmmTMB(
+#   total_urchins ~ fish_SPUL + swath_PANINT + (1 | site_name) + 
+#     ar1(0 + year_fct | site_name),
+#   data = glm_data, family = tweedie(link = "log")
+# )
+# 
+# model_tc2_2 <- glmmTMB(
+#   total_urchins ~ poly(fish_SPUL,2) + swath_PANINT + (1 | site_name) + 
+#     ar1(0 + year_fct | site_name),
+#   data = glm_data, family = tweedie(link = "log")
+# )
+# 
+# AIC(model_tc1, model_tc2, model_tc1_1, model_tc1_2)
+# Model_tc2 has a much lower AIC 
 
 # Random intercepts and slopes (does not converge)
 
-plot(model_tc1)
 car::Anova(model_tc1)
 summary(model_tc1)
 
-
-plot(model_tc2)
 car::Anova(model_tc2)
 summary(model_tc2)
+
+### Look at the residuals
+# DHARMa package 
+simulationOutput_m1 <- simulateResiduals(model_tc1, plot = F)
+plot(simulationOutput_m1)
+
+simulationOutput_m1_2 <- simulateResiduals(model_tc1_2, plot = F)
+plot(simulationOutput_m1_2)
+
+simulationOutput_m2 <- simulateResiduals(model_tc2, plot = F)
+plot(simulationOutput_m2)
 
 ##### Model effects plots #####################################################
 interaction_data <- as.data.frame(emmeans::emmeans(model_mpa1, "heatwave", by = "mpa_status", type = "response"))
 
 interaction_plot <- interaction_data %>% 
   ggplot(aes(heatwave, color = mpa_status)) + 
-  geom_pointrange(aes(y = response, ymin = lower.CL, ymax = upper.CL), 
+  geom_pointrange(aes(y = response, ymin = asymp.LCL, ymax = asymp.UCL), 
                   position = position_dodge(width = 0.2), 
                   linewidth = 1) +
   scale_color_manual(values=group.colors, name = "MPA Category") +
@@ -395,21 +564,31 @@ plot1 <- plotdata |>
     panel.grid.minor = element_blank(),
     axis.title.x = element_blank()
   ) +
-  ylab("Urchins")
+  ylab("Urchins") 
+
+plot1
 
 dat_text <- data.frame(
-  label = c("p < .0005", "p = 0.0028", "p < 0.0005", "p = 0.6605"),
+  label = c("p < 0.0001; p = 0.0003", "p < 0.0001; p = 0.38", "p < 0.0001; p = 0.25 ", "p = 0.74; p = 0.71"),
   species = c("Sheephead", "Sheephead", "Lobster", "Lobster"),
   model = c("random intercepts", "random intercepts + AR(1)", "random intercepts", "random intercepts + AR(1)")
 )
 
-plot_final <- plot1 + geom_text(
+plot_w_labels <- plot1 + geom_text(
   data    = dat_text,
   mapping = aes(x = -Inf, y = -Inf, label = label),
   hjust   = -0.1,
   vjust   = -1
 )
-plot_final
+
+library(magick)
+
+plot_final <- ggdraw() +
+  draw_plot(plot_w_labels) + 
+  draw_image(spiny_lobster, x = -0.33, y = 0.44, scale = 0.09) +
+  draw_image(spiny_lobster, x = -0.33, y = 0.02, scale = 0.09) +
+  draw_image(sheephead_3, x = 0.1, y = 0.45, scale = 0.1) +
+  draw_image(sheephead_3, x = 0.1, y = 0.02, scale = 0.1)
 
 # Modeling results plot
 png("Figures/GLMM_model_results_PISCO.png", width = 6, height = 6, 
@@ -429,3 +608,24 @@ png("Figures/Autocorrelation_PISCO.png", width = 6, height = 6,
 violin_plot
 dev.off() 
 
+# Residuals plots for model_tc1 and model_tc2
+png("Figures/Residuals_m1_PISCO.png", width = 8, height = 5, 
+    units = "in", res = 600)
+plot(simulationOutput_m1)
+dev.off()
+
+png("Figures/Residuals_m2_ar1_PISCO.png", width = 8, height = 5, 
+    units = "in", res = 600)
+plot(simulationOutput_m2)
+dev.off()
+
+png("Figures/Residuals_mpa_m1_PISCO.png", width = 8, height = 5,
+    units = "in", res = 600)
+plot(simulationOutput_mpa_m1)
+dev.off()
+
+
+png("Figures/Residuals_mpa_m2_ar1_PISCO.png", width = 8, height = 5,
+    units = "in", res = 600)
+plot(simulationOutput_mpa_m3)
+dev.off()
