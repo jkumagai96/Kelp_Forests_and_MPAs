@@ -54,7 +54,7 @@ station_points <- st_as_sf(station_data,
 raster::crs(station_points) == raster::crs(mpas)
 
 # Export MPA data
-st_write(mpas, "Processed_data/MPAs.shp", append = TRUE)
+st_write(mpas, "Processed_data/MPAs.shp", append = FALSE)
 
 ##### Processing ###############################################################
 # Spatial intersect between mpas and points to get all points within mpas 
@@ -93,6 +93,8 @@ kelp_w_mpas_adjusted <- rbind(not_protected, subset)
 
 # Formatting final data 
 final_data <- kelp_w_mpas_adjusted %>% 
+#  final_data <- kelp_w_mpas %>% 
+  arrange(PixelID) %>% 
   rename("Mpa_ID" = "Site_ID_12") %>% 
   rename("mpa_area" = "AreaMar_12") %>% 
   relocate(Mpa_ID, .after = depth) %>% 

@@ -100,6 +100,24 @@ Urchins_factor_plot <- data_w_central %>%
   theme(legend.position = "bottom")
 Urchins_factor_plot
 
+Urchins_per_region <- data_w_central %>% 
+  mutate(region = ifelse(region == "Central_Coast", "Central", "Southern")) %>% 
+  group_by(year, mpa_status, region) %>% 
+  summarise(total = mean(total_urchins)) %>% 
+  ggplot(aes(x = year, y = total, color = mpa_status)) +
+  geom_line(linewidth = 1) +
+  facet_grid(cols = vars(region)) +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  ylab(bquote('Urchins per 60' ~ m^2)) +
+  xlab("Year") +
+  annotate("rect", fill = "red", alpha = 0.2, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
+  theme_bw() +
+  theme(legend.position = c(.1, .75))
+Urchins_per_region
+
 red_urchins <- data_w_central %>% 
   mutate(region = ifelse(region == "Central_Coast", "Central", "Southern")) %>% 
   group_by(year, mpa_status, region) %>% 
@@ -153,15 +171,8 @@ combo_urchin_plot <- cowplot::plot_grid(purple_urchins, red_urchins)
 
 ##### Explore data #############################################################
 
-# Urchins plot data for southern California 
+# Urchins plot data
 urchin_data <- data %>% 
-  group_by(year, mpa_status) %>%
-  summarize(avg_urchins = mean(total_urchins),
-            se_urchins = std(total_urchins))
-
-# Urchins plot data for central California 
-urchin_central_data <- data_w_central %>%
-  filter(region == "Central_Coast") %>% 
   group_by(year, mpa_status) %>%
   summarize(avg_urchins = mean(total_urchins),
             se_urchins = std(total_urchins))
@@ -274,11 +285,11 @@ biomass_plot <- ggplot(data = PISCO_biomass_data,
                 top = 0.95)
 biomass_plot
 
-combo_plot <- plot_grid(urchins_plot, sheephead_plot, lobster_plot, biomass_plot,
-                        labels = "AUTO", nrow = 2)
+combo_plot <- plot_grid(lobster_plot, sheephead_plot, biomass_plot,
+                        labels = "AUTO", nrow = 3, hjust = 0.1)
 combo_plot
 ##### Export ###################################################################
-png("Figures/Urchins_sheephead_lobsters_PISCO.png", width = 12, height = 8, 
+png("Figures/Sheephead_lobsters_PISCO.png", width = 6, height = 8, 
     units = "in", res = 600)
 combo_plot
 dev.off() 
@@ -324,19 +335,14 @@ urchin_data <- urchin_data %>%
 u_aov <- aov(avg_urchins ~ mpa_status,
              data = urchin_data
 )
-# Are the residuals normal? 
-hist(u_aov$residuals)
 
-# QQ-plot
-library(car)
+hist(u_aov$residuals)
 qqPlot(u_aov$residuals,
        id = FALSE # id = FALSE to remove point identification
 )
 
 summary(u_aov)
 
-# Tukey HSD test:
-library(multcomp)
 post_test <- glht(u_aov,
                   linfct = mcp(mpa_status = "Tukey")
 )
@@ -344,6 +350,19 @@ post_test <- glht(u_aov,
 summary(post_test)
 
 
+# Sheepshead biomass
+biomass_data <- PISCO_biomass_data %>% 
+  mutate(mpa_status = factor(mpa_status, levels = c("Reference", "Partial", "Full")))
+
+biomass_aov <- aov(avg_biomass ~ mpa_status,
+             data = biomass_data
+)
+summary(biomass_aov)
+post_test <- glht(biomass_aov,
+                  linfct = mcp(mpa_status = "Tukey")
+)
+
+summary(post_test)
 ##### Linear Regression Statistics #############################################
 library("MASS")
 library("ggeffects")
@@ -364,6 +383,7 @@ glm_data2$total_urchins[glm_data2$total_urchins == 0] <- min(glm_data2$total_urc
 
 # Central california data 
 glm_data3 <- data_w_central %>% 
+  filter(region == "Central_Coast") %>% 
   mutate(
     heatwave = case_when(year < 2014 ~ "before", year > 2016 ~ "after", .default = "during"),
     heatwave = factor(heatwave, levels = c("before", "during", "after")), 
@@ -391,7 +411,7 @@ model_mpa3 <- glmmTMB(
     (1 | site_name) +
     ar1(0 + year_fct | site_name), 
   data = glm_data, 
-  family  = tweedie(link = "log")
+  family = tweedie(link = "log")
 )
 
 model_mpa1_central <- glmmTMB(
@@ -400,9 +420,6 @@ model_mpa1_central <- glmmTMB(
   data = glm_data3, 
   family  = tweedie(link = "log")
 )
-
-  
-  
 # DHARMa package 
 simulationOutput_mpa_m1 <- simulateResiduals(model_mpa1, plot = F)
 plot(simulationOutput_mpa_m1)
@@ -417,8 +434,13 @@ summary(model_mpa3)
 
 AIC(model_mpa1, model_mpa3) # Including the autoregressive function reduces AIC
 
-# Perhaps we can conclude that the interaction between the heatwave and protection status is highly significant
+# central california model
+simulationOutput_mpa_central <- simulateResiduals(model_mpa1_central, plot = F)
+plot(simulationOutput_mpa_central)
+car::Anova(model_mpa1_central)
+summary(model_mpa1_central)
 
+#### Testing the trophic cascades for southern california 
 # Random intercepts
 model_tc1 <- glmmTMB(
   total_urchins ~ poly(fish_SPUL, 2) + poly(swath_PANINT, 2) + (1 | site_name), 
@@ -478,20 +500,31 @@ simulationOutput_m2 <- simulateResiduals(model_tc2, plot = F)
 plot(simulationOutput_m2)
 
 ##### Model effects plots #####################################################
-interaction_data <- as.data.frame(emmeans::emmeans(model_mpa1, "heatwave", by = "mpa_status", type = "response"))
+is_data <- as.data.frame(emmeans::emmeans(model_mpa1, "heatwave", by = "mpa_status", type = "response")) %>% 
+  mutate(region = "Southern")
+ic_data <- as.data.frame(emmeans::emmeans(model_mpa1_central, "heatwave", by = "mpa_status", type = "response")) %>% 
+  mutate(region = "Central")
+
+interaction_data <- rbind(is_data, ic_data)
 
 interaction_plot <- interaction_data %>% 
   ggplot(aes(heatwave, color = mpa_status)) + 
   geom_pointrange(aes(y = response, ymin = asymp.LCL, ymax = asymp.UCL), 
                   position = position_dodge(width = 0.2), 
                   linewidth = 1) +
+  facet_grid(cols = vars(region)) +
   scale_color_manual(values=group.colors, name = "MPA Category") +
   ylab("Response (Urchins)") +
   theme_bw() +
-  theme(legend.position = "bottom",
-        panel.grid.major = element_blank()) 
+  theme(legend.position = "none",
+        panel.grid.major = element_blank()) +
+  xlab("Heatwave period")
 interaction_plot
 
+urchins_and_interactions_plot <- plot_grid(Urchins_per_region, interaction_plot, 
+                               labels = "AUTO", 
+                               nrow = 2)
+urchins_and_interactions_plot
 ##### Autocorrelation #########################################################
 
 ## Obtain residuals, pivot to wide data frame
@@ -590,6 +623,7 @@ plot_final <- ggdraw() +
   draw_image(sheephead_3, x = 0.1, y = 0.45, scale = 0.1) +
   draw_image(sheephead_3, x = 0.1, y = 0.02, scale = 0.1)
 
+##### Export Publication figures ###############################################
 # Modeling results plot
 png("Figures/GLMM_model_results_PISCO.png", width = 6, height = 6, 
     units = "in", res = 600)
@@ -597,9 +631,9 @@ plot_final
 dev.off() 
 
 # Modeling iteraction between protected areas and heatwave plot
-png("Figures/GLMM_heatwave_protection_plot_PISCO.png", width = 5, height = 4,
+png("Figures/GLMM_heatwave_protection_plot_PISCO.png", width = 8, height = 8,
     units = "in", res = 600)
-interaction_plot
+urchins_and_interactions_plot
 dev.off()
 
 # Violin plot
@@ -624,8 +658,12 @@ png("Figures/Residuals_mpa_m1_PISCO.png", width = 8, height = 5,
 plot(simulationOutput_mpa_m1)
 dev.off()
 
-
 png("Figures/Residuals_mpa_m2_ar1_PISCO.png", width = 8, height = 5,
     units = "in", res = 600)
 plot(simulationOutput_mpa_m3)
+dev.off()
+
+png("Figures/Residuals_mpa_central_PISCO.png", width = 8, height = 5,
+    units = "in", res = 600)
+plot(simulationOutput_mpa_central)
 dev.off()

@@ -24,6 +24,7 @@ final_results <- read.csv("Processed_data/data_tables/percent_recovery/pr_all.cs
 ##### Format Data ##############################################################
 # Combind the final results and format 
 final_results_all <- rbind(final_results, final_results_central, final_results_south)
+
 results_long <- final_results_all %>% 
   pivot_longer(names_to = "Comparison", values_to = "pvalues", F_N:F_P) 
 

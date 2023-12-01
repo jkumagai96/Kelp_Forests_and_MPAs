@@ -126,7 +126,8 @@ sheephead_standardized_biomass <- sheephead_standardized_biomass_per_site %>%
   filter(year >= 2007)
 
 print("Refer to PISCO figures script to visualize biomass")
-# write.csv(sheephead_standardized_biomass, "Processed_data/Data_tables/PISCO_biomass_data.csv", row.names = F)
+write.csv(sheephead_standardized_biomass, "Processed_data/Data_tables/PISCO_biomass_data.csv", row.names = F)
+write.csv(sheephead_standardized_biomass_per_site, "Processed_data/Data_tables/PISCO_biomass_per_site.csv", row.names = F)
 
 ###### Investigate by size #####################################################
 # I would like to make a graph where we have a series of histograms of the size
@@ -166,25 +167,16 @@ cohort_plot <- ggplot(aes(x = fish_tl, y = yr, group = yr, fill = yr), data = si
 
 cohort_plot 
 
-ggplot(aes(x = fish_tl, y = yr, group = yr, fill = yr), data = size_classes_df) +
-  annotate("rect", fill = "#ADD8E620",
-           xmin = 30, xmax = Inf,
-           ymin = -Inf, ymax = Inf) +
-  geom_ridgeline(height = 4) +
-  theme_bw() +
-  theme(legend.position = "none") + 
-  geom_vline(xintercept = 30, color = "black") + 
-  scale_fill_manual(values = c(rep("grey", 7), rep("firebrick2", 3), rep("grey", 5))) +
-  labs(x = "Sheephead Total Length", y = "Year") 
-
 
 l_sheephead_standardized_biomass_per_site <- distinct_transects %>% 
   left_join(sheephead_by_size, by = c("campus", "method", "year", "month", "day", "site", "transect", "zone")) %>% 
   mutate(biomass = (n_sheephead*((0.0144)*fish_tl^3.04))) %>% 
   replace_na(list(biomass = 0)) %>%
-  filter(fish_tl >= 30) %>% 
+  filter(fish_tl >= 35) %>% 
   group_by(year, mpa_status, site, Estab_Yr_1) %>% 
   summarise(avg_biomass_per_site = mean(biomass)) 
+
+write.csv(l_sheephead_standardized_biomass_per_site, "Processed_data/Data_tables/PISCO_biomass_large_per_site.csv", row.names = F)
 
 l_sheephead_standardized_biomass <- l_sheephead_standardized_biomass_per_site %>% 
   group_by(year, mpa_status) %>% 
@@ -200,7 +192,7 @@ high_biomass_plot <- ggplot(data = l_sheephead_standardized_biomass,
   geom_errorbar(aes(ymin = avg_biomass-se_biomass, ymax = avg_biomass + se_biomass),width = 0.2, linewidth = .5, alpha = 0.4)+
   theme_bw() +
   scale_color_manual(values=group.colors, name = "MPA Category") +
-  labs(x = "Year", y = "Mean Sheephead Biomass (>= 30cm)") +
+  labs(x = "Year", y = "Mean Sheephead Biomass (>= 35cm)") +
   theme(legend.position = "none",
         panel.background = element_rect(fill = "#ADD8E620")) +
   annotate("rect", fill = "red", alpha = 0.2,

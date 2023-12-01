@@ -13,6 +13,9 @@ kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_an
 points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv") 
 
 ##### Format Data ##############################################################
+# Set cutoff year for delineation between old and new 
+cutoff_yr <- 2007
+
 maxes <- kelp_data_all %>% 
   filter(year < 2014) %>% 
   dplyr::select(PixelID, year, area) %>% 
@@ -22,7 +25,7 @@ maxes <- kelp_data_all %>%
 
 ##### Calculate Percent Recovery ###############################################
 pixels_to_remove <- points_in_mpas %>% 
-  filter(Estab_Yr_1 <= 2003) %>%  # Marking all pixels within MPAs before or during 2003 to be removed
+  filter(Estab_Yr_1 <= cutoff_yr) %>%  # Marking all pixels within MPAs before or during cutoff to be removed
   select(PixelID) %>% 
   mutate(remove_me = 1)
 
@@ -40,8 +43,8 @@ kelp_data <- kelp_data_all %>%
   left_join(pixels_to_remove, by = "PixelID") %>% 
   filter(is.na(remove_me)) 
 
-points_in_mpas <- points_in_mpas %>% # Marking all pixels within MPAs to stay if established after 2003
-  filter(Estab_Yr_1 > 2003)
+points_in_mpas <- points_in_mpas %>% # Marking all pixels within MPAs to stay if established after cutoff year
+  filter(Estab_Yr_1 > cutoff_yr)
 
 ##### Calculate True Values  ###################################################
 # Change global option to not print out message about group summaries 
@@ -164,13 +167,14 @@ plot1 <- results_long %>%
 plot1
 
 # Export 
-png("Figures/Percent_recovery/New_2004_mpas.png", width = 4, height = 3, units = "in", res = 600)
+filename <- paste0("Figures/Percent_recovery/New_", cutoff_yr, "_mpas.png")
+png(filename, width = 4, height = 3, units = "in", res = 600)
 plot1
 dev.off() 
 
 kelp_data_new <- kelp_data %>% mutate(age = "new")
 ##### Old MPAs #################################################################
-rm(list=setdiff(ls(), "kelp_data_new"))
+rm(list=setdiff(ls(), c("kelp_data_new", "cutoff_yr")))
 
 # Load Data
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
@@ -184,7 +188,7 @@ maxes <- kelp_data_all %>%
   filter(historic_baseline > 0)
 
 pixels_to_remove <- points_in_mpas %>% 
-  filter(Estab_Yr_1 > 2003) %>%  # Marking all pixels within MPAs before or during 2003 to be removed
+  filter(Estab_Yr_1 > cutoff_yr) %>%  # Marking all pixels within MPAs before or during cutoff year to be removed
   select(PixelID) %>% 
   mutate(remove_me = 1)
 
@@ -202,8 +206,8 @@ kelp_data <- kelp_data_all %>%
   left_join(pixels_to_remove, by = "PixelID") %>% 
   filter(is.na(remove_me)) 
 
-points_in_mpas <- points_in_mpas %>% # Marking all pixels within MPAs to stay if established after 2003
-  filter(Estab_Yr_1 <= 2003)
+points_in_mpas <- points_in_mpas %>% # Marking all pixels within MPAs to stay if established after cutoff
+  filter(Estab_Yr_1 <= cutoff_yr)
 
 # Change global option to not print out message about group summaries 
 options(dplyr.summarise.inform = FALSE)
@@ -322,11 +326,14 @@ plot2 <- results_long %>%
 plot2
 
 # Export 
-png("Figures/Percent_recovery/Old_mpas.png", width = 4, height = 3, units = "in", res = 600)
+filename2 <- paste0("Figures/Percent_recovery/Old_", cutoff_yr, "_mpas.png")
+png(filename2, width = 4, height = 3, units = "in", res = 600)
 plot2
 dev.off() 
 
 kelp_data_old <- kelp_data %>% mutate(age = "old")
+
+
 ##### Percent Recovery Figure ##################################################
 rm(kelp_data)
 
@@ -372,8 +379,8 @@ stat.test <- results_long %>%
   select(timeframe, age, group1, group2, p.adj) %>% 
   mutate(y.position = c(2.85, 2.6, 2.6, 2.85, 2.6, 2.6,
                         2.85, 2.6, 2.6, 2.85, 2.6, 2.6)) %>% 
-  mutate("p.adj.signif" = c("ns", "ns", "ns","ns", "ns", "ns",
-                            "***", "*", "ns", "***", "ns", "ns")) 
+  mutate("p.adj.signif" = c("***", "**", "ns","ns", "ns", "ns",
+                            "**", "ns", "**", "***", "ns", "***")) 
 # create figure with significance bars 
 boxplot_pr_w_sig <- base + 
   stat_pvalue_manual(stat.test, 
@@ -391,43 +398,3 @@ png("Figures/Percent_recovery/pr_boxplot_w_sig_MPA_age.png",
     res = 600)
 boxplot_pr_w_sig 
 dev.off() 
-
-##### Other Figures ############################################################
-# Visualize historic baseline between protected and unprotected 
-mpa_age <- points_in_mpas %>% 
-  select(PixelID, Estab_Yr_1) %>% 
-  mutate(age = ifelse(Estab_Yr_1 > 2003, "new", "old"))
-
-# Historic baseline
-kelp_data_all %>% 
-  filter(year >= 2014) %>% 
-  left_join(maxes, by = "PixelID") %>% 
-  select(PixelID, year, area, region, Mpa_ID, mpa_status, historic_baseline) %>% 
-  mutate(percent_recovery = area/historic_baseline) %>% 
-  left_join(mpa_age, by = "PixelID") %>% 
-  ggplot(aes(x = age, y = historic_baseline)) +
-  geom_boxplot(outlier.shape = NA) +
-  ylim(0,100000) 
-
-# Percent recovery
-kelp_data_all %>% 
-  filter(year >= 2014) %>% 
-  left_join(maxes, by = "PixelID") %>% 
-  select(PixelID, year, area, region, Mpa_ID, mpa_status, historic_baseline) %>% 
-  mutate(percent_recovery = area/historic_baseline) %>% 
-  left_join(mpa_age, by = "PixelID") %>% 
-  ggplot(aes(x = age, y = percent_recovery)) +
-  geom_boxplot(outlier.shape = NA) +
-  #ylim(0,100000) 
-  ylim(0, 3)
-
-# Kelp area
-kelp_data_all %>% 
-  filter(year >= 2014) %>% 
-  left_join(maxes, by = "PixelID") %>% 
-  select(PixelID, year, area, region, Mpa_ID, mpa_status, historic_baseline) %>% 
-  mutate(percent_recovery = area/historic_baseline) %>% 
-  left_join(mpa_age, by = "PixelID") %>% 
-  ggplot(aes(x = age, y = area)) +
-  geom_boxplot() +
-  ylim(0, 20000)

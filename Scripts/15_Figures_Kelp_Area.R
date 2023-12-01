@@ -124,7 +124,7 @@ plot_all_split_avg <- ggplot(df3, aes(x = year, y = mean_kelp_area, group = mpa_
            xmin = 2014, xmax = 2016,
            ymin = -Inf, ymax = Inf) +
   annotate("text", label = "All", fontface = 2, 
-           x = 2018, y = 95000) + 
+           x = 2018, y = 105000) + 
   geom_line(aes(color=mpa_status), linewidth = 0.8)+
   scale_color_manual(values=group.colors, name = "MPA Category") +
   scale_y_continuous(label = comma) + 
@@ -290,8 +290,3 @@ png("Figures/Kelp_area_averages.png", width = 10, height = 10,
     units = "in", res = 600)
 plot_averages
 dev.off() 
-
-##### Change in Kelp Area ######################################################
-# First the proportion of zeros 
-kelp_data_all$area
-
