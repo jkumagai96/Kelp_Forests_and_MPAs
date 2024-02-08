@@ -1,4 +1,4 @@
-# Date: January 25th 2022
+# Date: December 12th, 2022
 # Author: Joy A. Kumagai (kumagaij@stanford.edu)
 # Purpose: Create a data table with additional variables including, MPA 
 #          protection, human gravity index, and marine heat waves and cold spells 
@@ -115,15 +115,68 @@ temp_anon <- cbind(heat_waves, cold_spells$CS_cummulative) %>%
          MHW_intensity = "MHW_cummulative") %>%  
   mutate(year = as.integer(year))
 
-# Join temperature anonmoly data by long, lat and year
-final_data <- final_data %>% 
-  left_join(temp_anon, by = c("long", "lat", "year"))
+# Join temperature anomaly data by long, lat and year
+data_w_temp <- final_data %>% 
+  left_join(temp_anon, by = c("long", "lat", "year")) %>% 
+  mutate(has_temp_data = !is.na(MHW_intensity)) 
 
 # How many cells did not join 
-n_na <- final_data %>% filter(is.na(MHW_intensity)) %>% nrow()
-total <- nrow(final_data)
+n_na <- data_w_temp %>% filter(is.na(MHW_intensity)) %>% nrow()
+total <- nrow(data_w_temp)
 
 n_na/total*100 # 11.5% of the data are NAs now 
+
+### Find the nearest heatwave/cold spell data for unique pixels
+temp_points <- data_w_temp %>% 
+  dplyr::select(lat, long, PixelID, has_temp_data) %>% 
+  unique() %>% 
+  st_as_sf(coords = c("long", "lat"), remove = FALSE)
+
+na_temp <- temp_points %>% 
+  filter(has_temp_data == FALSE)
+
+has_temp <- temp_points %>% 
+  filter(has_temp_data == TRUE)
+
+joined_points <- st_join(na_temp, has_temp, join = st_nearest_feature) %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(PixelID.x, PixelID.y) 
+
+# Assign the blank MHW and coldspell values to the nearest pixel with data 
+# Logic is to go through each pixel within the final data that is PixelID.x, then 
+# find the corresponding PixelID.y MHW value each year, then assign it to the same one
+lookup_table <- data_w_temp %>% 
+  dplyr::select(PixelID, year, quarter, MHW_intensity, CS_intensity)
+
+fixed_data <- c()
+
+for (i in joined_points$PixelID.x) {
+  
+  nearest_pixel <- joined_points[joined_points$PixelID.x == i, 2] 
+  
+  data_to_be_joined <- lookup_table %>% 
+    filter(PixelID == nearest_pixel)
+  
+  fixed_data_per_pixel <- data_w_temp %>% 
+    filter(PixelID == i) %>% 
+    dplyr::select(-c(MHW_intensity, CS_intensity)) %>% 
+    full_join(data_to_be_joined, by = c("year", "quarter")) 
+  
+  fixed_data <- rbind(fixed_data, fixed_data_per_pixel)
+  
+}
+# clean up the column names 
+fixed_data <- fixed_data %>% 
+  dplyr::select(-PixelID.y) %>% 
+  rename(PixelID = PixelID.x) 
+
+# Combine the original data with the fixed data. 
+a <- data_w_temp %>% 
+  filter(has_temp_data == TRUE)
+
+final_data <- rbind(a, fixed_data) %>% 
+  arrange(PixelID) %>% 
+  dplyr::select(-has_temp_data)
 
 ##### Add in regions according to Marine Life Protecion Act Regions ##########
 final_data <- final_data %>% 
@@ -138,7 +191,7 @@ final_data <- final_data %>%
   filter(region == "South_Coast" | region == "Central_Coast") # Filter by regions 
 
 region_data <- final_data %>% 
-  select(PixelID, region) %>% 
+  dplyr::select(PixelID, region) %>% 
   unique()
 
 # Filter poitns in mpas by regions

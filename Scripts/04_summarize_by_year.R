@@ -76,11 +76,8 @@ subset <- all_kelp_data %>%
 df <- left_join(kelp_data_yr, subset, by = "PixelID") 
 
 nrow(df)/(nrow(all_kelp_data)/4) # Filtering data so years with 2 or more quarters with NAs are removed, removed 5% of the data overall
-##### Add in distance to coast #################################################
-
-final <- left_join(df, distances, by = c("long", "lat", "PixelID"))
 
 ##### Export ###################################################################
 
-write.csv(final, "Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv", 
+write.csv(df, "Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv", 
           row.names = F)

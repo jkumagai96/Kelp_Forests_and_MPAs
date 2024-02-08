@@ -14,10 +14,15 @@ library(factoextra)
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
 
 ##### Format Data ##############################################################
+min_non_zero <-  sort(unique(kelp_data_all$gravity)) %>% head(2)  
+min_non_zero <- min_non_zero[2]
+
+kelp_data_all$gravity[kelp_data_all$gravity == 0] <- min_non_zero
+
 data <- kelp_data_all %>% 
   filter(year == 2021) %>% 
   select(PixelID, mpa_status, hsmax, nitrate, temperature, MHW_intensity, CS_intensity,
-         depth, gravity, distance_to_coast) 
+         depth, gravity) 
 
 data <- na.omit(data) # Removes 12% of the data 
 
@@ -56,9 +61,7 @@ data <- kelp_data_all %>%
   filter(mpa_status != "Partial") %>% 
   filter(year == 1995) %>% 
   select(PixelID, mpa_status, hsmax, nitrate, temperature, MHW_intensity, CS_intensity,
-         depth, gravity, distance_to_coast) 
-
-data <- na.omit(data) 
+         depth, gravity) 
 
 data.pca <- prcomp(data[,-c(1,2)], center = TRUE, scale = TRUE)
 summary(data.pca, loadings=TRUE)
@@ -91,9 +94,7 @@ dev.off()
 data <- kelp_data_all %>% 
   filter(year == 2021) %>% 
   select(PixelID, mpa_status, region, hsmax, nitrate, temperature, MHW_intensity, CS_intensity,
-         depth, gravity, distance_to_coast) 
-
-data <- na.omit(data) # Removes 12% of the data 
+         depth, gravity) 
 
 data.pca <- prcomp(data[,-c(1,2,3)], center = TRUE, scale = TRUE)
 summary(data.pca, loadings=TRUE)
