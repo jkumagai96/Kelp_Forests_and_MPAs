@@ -23,7 +23,7 @@ print('data loaded')
 MHW_intensity <- MHW_df %>% 
   arrange(year) %>% 
   relocate(lon, lat) %>% 
-  dplyr::select(-c(count, total_days)) %>% # Filter data
+  dplyr::select(-c(total_days)) %>% # Filter data
   pivot_wider(names_from = year,
               values_from = total_icum) # rasterfrom XYZ requires wide data
   
@@ -60,7 +60,7 @@ print('marine heat wave data exported')
 CS_intensity <- CS_df %>% 
   arrange(year) %>% 
   relocate(lon, lat) %>% 
-  dplyr::select(-c(count, total_days)) %>% # Filter data
+  dplyr::select(-c(total_days)) %>% # Filter data
   pivot_wider(names_from = year,
               values_from = total_icum) # rasterfrom XYZ requires wide data
 
