@@ -123,6 +123,33 @@ purple_urchins
 combo_urchin_plot <- cowplot::plot_grid(purple_urchins, red_urchins)
 
 ##### Lobster through time #####################################################
+lobster_plot_w_legend <- inverts_data %>% 
+  filter(region == "South_Coast") %>% 
+  group_by(year, mpa_status) %>% 
+  summarise(lobster = mean(PANINT_d), 
+            lobster_se = std(PANINT_d)) %>% 
+  ggplot(aes(x = year, y = lobster, color = mpa_status)) +
+  geom_line(linewidth = 1) +
+  geom_errorbar(aes(ymin = lobster - lobster_se, 
+                    ymax = lobster + lobster_se), 
+                width = 0.2, 
+                linewidth = .5, 
+                alpha = 1) +
+  scale_color_manual(values=group.colors, name = "MPA Category") +
+  ylab(bquote('Spiny lobsters per 60' ~ m^2)) +
+  xlab("Year") +
+  annotate("rect", fill = "red", alpha = 0.2, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  inset_element(p = spiny_lobster,
+                left = 0.03,
+                bottom = 0.75,
+                right = 0.2,
+                top = 0.95) 
+
 lobster_plot <- inverts_data %>% 
   filter(region == "South_Coast") %>% 
   group_by(year, mpa_status) %>% 
@@ -143,9 +170,7 @@ lobster_plot <- inverts_data %>%
            ymin = -Inf, ymax = Inf) +
   geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
   theme_bw() +
-  theme(legend.position = c(.85, .85),
-        legend.background = element_rect(linewidth = 0.2, colour = 1),
-        panel.grid.minor = element_blank()) +
+  theme(legend.position = "none") +
   inset_element(p = spiny_lobster,
                 left = 0.03,
                 bottom = 0.75,
@@ -167,7 +192,7 @@ sheephead_plot <- fish_data %>%
                 linewidth = .5, 
                 alpha = 1) +
   scale_color_manual(values=group.colors, name = "MPA Category") +
-  ylab(bquote('California sheephead per 60' ~ m^2)) +
+  ylab(bquote('California sheephead per 120' ~ m^3)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
            xmin = 2014, xmax = 2016,
@@ -198,7 +223,7 @@ biomass_plot <- fish_data %>%
                 linewidth = .5, 
                 alpha = 1) +
   scale_color_manual(values=group.colors, name = "MPA Category") +
-  ylab(bquote('Sheephead biomass (kg) per 60' ~ m^2)) +
+  ylab(bquote('Sheephead biomass (kg) per 120' ~ m^3)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
            xmin = 2014, xmax = 2016,
@@ -215,10 +240,14 @@ biomass_plot <- fish_data %>%
 
 biomass_plot
 
-combo_plot <- plot_grid(lobster_plot, sheephead_plot, biomass_plot, 
-                        labels = c("A", "B", "C"),
-                        ncol = 1)
-lobster_plot / sheephead_plot / biomass_plot
+leg <- get_legend(lobster_plot_w_legend)
+
+combo_plot <- plot_grid(lobster_plot, 
+                        sheephead_plot,
+                        biomass_plot, 
+                        leg,
+                        rel_heights = c(1,1,1,.1),
+                        labels = c("A", "B", "C", ""), ncol = 1, hjust = 0.1)
 
 ##### Export ###################################################################
 png("Figures/Urchins_PISCO.png", width = 9, height = 6, 
@@ -231,3 +260,7 @@ png("Figures/Urchins_per_region_PISCO.png", width = 9, height = 5,
 Urchins_per_region
 dev.off()
 
+png("Figures/Sheephead_lobsters_PISCO_v2.png", width = 6, height = 10, 
+    units = "in", res = 600)
+combo_plot
+dev.off()

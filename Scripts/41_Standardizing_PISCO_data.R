@@ -29,6 +29,7 @@ mpas <- st_read("Processed_data/MPAs.shp") # mpas
 #     and the large abundances of sheephead (most likely due to the 1998 large El Nino
 #     are mostly gone by then 
 
+# Cutoff of 10cm
 
 year_cutoff <- 2002
 
@@ -66,7 +67,8 @@ write.csv(sites_for_joining, "Processed_data/data_tables/PISCO_sites_with_MPAs.c
 ##### Create unique transects ##################################################
 # Count the number of distinct transects 
 distinct_transects_fish <- PISCO_fish_raw %>% 
-  filter(year >= year_cutoff) %>% 
+  filter(year >= year_cutoff,
+         level == "BOT") %>% 
   distinct(campus, method, year, month, day, site, zone, transect) %>% 
   left_join(sites_for_joining, by = c("site" = "SITE")) %>% 
   filter(region == "South_Coast" |
@@ -99,13 +101,12 @@ view(test)
 
 ##### Format PISCO raw fish data ###############################################
 PISCO_fish <- PISCO_fish_raw %>% 
-  filter(year >= year_cutoff) %>% 
+  filter(fish_tl >= 10) %>% # IMPORTANT TO FOLLOW PISCO PROCESSING!!!!! 
+  filter(year >= year_cutoff,
+         level == "BOT") %>% 
   filter(classcode == "SPUL") %>% 
-  select(-c(depth, observer, notes, level, sex, surge))
+  select(-c(depth, observer, notes, sex, surge))
 
-# See if the rows with no fish_tl have any info on max or min total length
-is.na(PISCO_fish$fish_tl) %>% sum()
-PISCO_fish[is.na(PISCO_fish$fish_tl), ] # they don't
 
 fish <- PISCO_fish %>% 
   group_by(campus, method, year, month, day, site, zone, transect) %>% 
@@ -130,9 +131,14 @@ inverts <- PISCO_swath %>%
            classcode == "STRPURAD" |
            classcode == "PANINT") %>% 
   pivot_wider(names_from = classcode, values_from = count) %>% 
-  select(-c(size, disease, depth, observer, notes, survey_year))
+  select(-c(disease, depth, observer, notes, survey_year)) %>% 
+  group_by(campus, method, year, month, day, site, zone, transect) %>% 
+  summarize(CENCOR = sum(CENCOR, na.rm = T),
+            MESFRAAD = sum(MESFRAAD, na.rm = T),
+            STRPURAD = sum(STRPURAD, na.rm = T),
+            PANINT = sum(PANINT, na.rm = T))
 
-inverts$total_urchins <- rowSums(inverts[,9:12], na.rm = TRUE, dims = 1)
+inverts$total_urchins <- rowSums(inverts[,10:12], na.rm = TRUE, dims = 1)
 
 invert_densities <- distinct_transects_inverts %>% 
   left_join(inverts, by = c("campus", "method", "year", "month", "day", "site", "zone", "transect")) %>% 
@@ -149,6 +155,21 @@ invert_densities <- distinct_transects_inverts %>%
             STRPURAD_d = mean(STRPURAD))
   
 # Each individual transect is weighted equally due to the distinct transects
+
+# How many sites per region / mpa_status
+PISCO_data_summarized %>% 
+  ungroup() %>% 
+  distinct(site, region, mpa_status) %>% 
+  group_by(region, mpa_status) %>% 
+  summarize(n = n()) %>% 
+  mutate(100*n/sum(n))
+
+PISCO_data_summarized %>% 
+  ungroup() %>% 
+  distinct(site, mpa_status) %>% 
+  group_by(mpa_status) %>% 
+  summarize(n = n()) %>% 
+  mutate(100*n/sum(n))
 
 ##### Combine data and export ##################################################
 PISCO_data_summarized <- full_join(fish_densities, invert_densities) %>% 
