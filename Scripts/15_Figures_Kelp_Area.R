@@ -155,7 +155,7 @@ plot_south_all_sum <- ggplot(df4_b, aes(x = year, y = sum_kelp_area/1e6)) +
   annotate("rect", fill = "red", alpha = 0.4, 
            xmin = 2014, xmax = 2016,
            ymin = -Inf, ymax = Inf) +
-  annotate("text", label = "South", fontface = 2, 
+  annotate("text", label = "Southern", fontface = 2, 
            x = 2018, y = 35) + 
   geom_line(linewidth = 0.8)+
   scale_y_continuous(label = comma) + 
@@ -170,7 +170,7 @@ plot_south_split_median <- ggplot(df4, aes(x = year, y = median_kelp_area, group
   annotate("rect", fill = "red", alpha = 0.4, 
            xmin = 2014, xmax = 2016,
            ymin = -Inf, ymax = Inf) +
-  annotate("text", label = "South", fontface = 2, 
+  annotate("text", label = "Southern", fontface = 2, 
            x = 2018, y = 40000) + 
   geom_line(aes(color=mpa_status))+
   scale_color_manual(values=group.colors, name = "MPA Category") +
@@ -187,7 +187,7 @@ plot_south_split_avg <- ggplot(df4, aes(x = year, y = mean_kelp_area, group = mp
   annotate("rect", fill = "red", alpha = 0.4, 
            xmin = 2014, xmax = 2016,
            ymin = -Inf, ymax = Inf) +
-  annotate("text", label = "South", fontface = 2, 
+  annotate("text", label = "Southern", fontface = 2, 
            x = 2018, y = 40000) + 
   geom_line(aes(color=mpa_status), linewidth = 0.8)+
   scale_color_manual(values=group.colors, name = "MPA Category") +
@@ -279,6 +279,45 @@ plot_averages <- plot_grid(plot_all_sum,
           ncol = 2,
           labels = c('A', 'B', 'C', 'D', 'E', 'F'), 
           label_size = 12)
+
+##### Kelp total and averages per category from 2012 ###########################
+kelp_data_all %>% 
+  filter(region == "Central_Coast") %>% 
+  #filter(year >= 2012) %>% 
+  group_by(year) %>% 
+  summarise(mean_kelp_area = mean(area),
+            median_kelp_area = median(area),
+            sum_kelp_area = sum(area)) %>% 
+  ggplot(aes(x = year, y = sum_kelp_area/1e6)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "Central", fontface = 2, 
+           x = 2018, y = 25) + 
+  geom_line(linewidth = 0.8)+
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  ylab(bquote('Total Kelp Area '(km^2))) +
+  xlab("Year")
+
+kelp_data_all %>% 
+  filter(region == "South_Coast") %>% 
+  #filter(year >= 2012) %>% 
+  group_by(year) %>% 
+  summarise(mean_kelp_area = mean(area),
+            median_kelp_area = median(area),
+            sum_kelp_area = sum(area)) %>% 
+  ggplot(aes(x = year, y = sum_kelp_area/1e6)) + 
+  annotate("rect", fill = "red", alpha = 0.4, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  annotate("text", label = "Southern", fontface = 2, 
+           x = 2018, y = 25) + 
+  geom_line(linewidth = 0.8)+
+  scale_y_continuous(label = comma) + 
+  theme_bw() +
+  ylab(bquote('Total Kelp Area '(km^2))) +
+  xlab("Year")
 
 ##### Export ###################################################################
 png("Figures/Kelp_area_medians.png", width = 10, height = 10, 

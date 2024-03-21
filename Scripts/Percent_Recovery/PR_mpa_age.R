@@ -14,7 +14,7 @@ points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_an
 
 ##### Format Data ##############################################################
 # Set cutoff year for delineation between old and new 
-cutoff_yr <- 2007
+cutoff_yr <- 2006
 
 maxes <- kelp_data_all %>% 
   filter(year < 2014) %>% 
@@ -26,7 +26,7 @@ maxes <- kelp_data_all %>%
 ##### Calculate Percent Recovery ###############################################
 pixels_to_remove <- points_in_mpas %>% 
   filter(Estab_Yr_1 <= cutoff_yr) %>%  # Marking all pixels within MPAs before or during cutoff to be removed
-  select(PixelID) %>% 
+  dplyr::select(PixelID) %>% 
   mutate(remove_me = 1)
 
 # Calculate Percent Recovery for each row in the dataset from 2014 to 2021
@@ -145,7 +145,10 @@ after_pvalues <- data.frame("2017-2021",
 
 colnames(after_pvalues) <- c("timeframe","F_N", "P_N", "F_P")
 
-final_results <- rbind(during_pvalues, after_pvalues)
+final_results <- rbind(during_pvalues, after_pvalues) %>% 
+  mutate(F_N = p.adjust(F_N, method = "bonferroni", n = 6),
+         P_N = p.adjust(P_N, method = "bonferroni", n = 6),
+         F_P = p.adjust(F_P, method = "bonferroni", n = 6))
 
 final_results
 write.csv(final_results, "Processed_data/data_tables/percent_recovery/pr_new_mpas.csv", row.names = F)
@@ -167,10 +170,10 @@ plot1 <- results_long %>%
 plot1
 
 # Export 
-filename <- paste0("Figures/Percent_recovery/New_", cutoff_yr, "_mpas.png")
-png(filename, width = 4, height = 3, units = "in", res = 600)
-plot1
-dev.off() 
+# filename <- paste0("Figures/Percent_recovery/New_", cutoff_yr, "_mpas.png")
+# png(filename, width = 4, height = 3, units = "in", res = 600)
+# plot1
+# dev.off() 
 
 kelp_data_new <- kelp_data %>% mutate(age = "new")
 ##### Old MPAs #################################################################
@@ -305,7 +308,10 @@ after_pvalues <- data.frame("2017-2021",
 
 colnames(after_pvalues) <- c("timeframe","F_N", "P_N", "F_P")
 
-final_results <- rbind(during_pvalues, after_pvalues)
+final_results <- rbind(during_pvalues, after_pvalues) %>% 
+  mutate(F_N = p.adjust(F_N, method = "bonferroni", n = 6),
+         P_N = p.adjust(P_N, method = "bonferroni", n = 6),
+         F_P = p.adjust(F_P, method = "bonferroni", n = 6))
 
 final_results
 write.csv(final_results, "Processed_data/data_tables/percent_recovery/pr_old_mpas.csv", row.names = F)
@@ -326,10 +332,10 @@ plot2 <- results_long %>%
 plot2
 
 # Export 
-filename2 <- paste0("Figures/Percent_recovery/Old_", cutoff_yr, "_mpas.png")
-png(filename2, width = 4, height = 3, units = "in", res = 600)
-plot2
-dev.off() 
+# filename2 <- paste0("Figures/Percent_recovery/Old_", cutoff_yr, "_mpas.png")
+# png(filename2, width = 4, height = 3, units = "in", res = 600)
+# plot2
+# dev.off() 
 
 kelp_data_old <- kelp_data %>% mutate(age = "old")
 
@@ -341,7 +347,7 @@ library(ggpubr)
 library(rstatix)
 
 # Significance Data
-final_results_new<- read.csv("Processed_data/data_tables/percent_recovery/pr_new_mpas.csv") %>% 
+final_results_new <- read.csv("Processed_data/data_tables/percent_recovery/pr_new_mpas.csv") %>% 
   mutate(age = "new")
 final_results_old <- read.csv("Processed_data/data_tables/percent_recovery/pr_old_mpas.csv") %>% 
   mutate(age = "old")
@@ -375,12 +381,11 @@ stat.test <- results_long %>%
                     "Full", "Partial", "Full", "Full", "Partial", "Full")) %>% 
   mutate(group2 = c("None", "None", "Partial", "None", "None", "Partial", 
                     "None", "None", "Partial", "None", "None", "Partial")) %>%
-  mutate(p.adj = pvalues*6) %>% 
-  select(timeframe, age, group1, group2, p.adj) %>% 
+  select(timeframe, age, group1, group2, pvalues) %>% 
   mutate(y.position = c(2.85, 2.6, 2.6, 2.85, 2.6, 2.6,
                         2.85, 2.6, 2.6, 2.85, 2.6, 2.6)) %>% 
-  mutate("p.adj.signif" = c("***", "**", "ns","ns", "ns", "ns",
-                            "**", "ns", "**", "***", "ns", "***")) 
+  mutate("p.adj.signif" = c("ns", "ns", "ns","ns", "ns", "ns",
+                            "**", "**", "ns", "***", "ns", "ns")) 
 # create figure with significance bars 
 boxplot_pr_w_sig <- base + 
   stat_pvalue_manual(stat.test, 

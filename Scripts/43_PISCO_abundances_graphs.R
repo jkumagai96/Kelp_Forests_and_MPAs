@@ -11,13 +11,14 @@ library(png)
 library(patchwork)
 
 # Load Data
-data <- read.csv("Processed_data/PISCO_data_summarized.csv")
+data <- read.csv("Processed_data/PISCO_data_summarized.csv") %>% 
+  mutate(mpa_status = ifelse(mpa_status == "Reference", "Unprotected", mpa_status))
 
 # Declare Functions 
 std <- function(x) sd(x)/sqrt(length(x))
 
 # Declare group colors
-group.colors <- c(Full = "#440154", Reference = "#FFBA00", Partial ="#21918c")
+group.colors <- c(Full = "#440154", Unprotected = "#FFBA00", Partial ="#21918c")
 
 ##### Load organism photos #####################################################
 urchins <- readPNG("Figures/Organisms/Urchin_Figure_t.png",native = TRUE)
@@ -26,7 +27,7 @@ sheephead_3 <- readPNG("Figures/Organisms/Sheephead_3.png", native = TRUE)
 spiny_lobster <- readPNG("Figures/Organisms/Spiny_Lobster_Figure_t.png", native = TRUE)
 
 ##### Format Data ##############################################################
-# How many sites and how are they distributed across MPA grous?
+# How many sites and how are they distributed across MPA groups?
 unique(data$site) %>% length()
 
 data %>% 
@@ -51,7 +52,7 @@ Urchins_per_region <- inverts_data %>%
                 linewidth = .5, 
                 alpha = 1) +
   facet_grid(cols = vars(region)) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab("Number of Urchnis") +
   ylab(bquote('Urchins per 60' ~ m^2)) +
   annotate("rect", fill = "red", alpha = 0.2, 
@@ -79,7 +80,7 @@ red_urchins <- inverts_data %>%
                 linewidth = .5, 
                 alpha = 1) +
   facet_grid(vars(region)) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab(bquote('Red urchins per 60' ~ m^2)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
@@ -105,7 +106,7 @@ purple_urchins <- inverts_data %>%
                 linewidth = .5, 
                 alpha = 1) +
   facet_grid(vars(region)) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab(bquote('Purple urchins per 60' ~ m^2)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
@@ -123,33 +124,6 @@ purple_urchins
 combo_urchin_plot <- cowplot::plot_grid(purple_urchins, red_urchins)
 
 ##### Lobster through time #####################################################
-lobster_plot_w_legend <- inverts_data %>% 
-  filter(region == "South_Coast") %>% 
-  group_by(year, mpa_status) %>% 
-  summarise(lobster = mean(PANINT_d), 
-            lobster_se = std(PANINT_d)) %>% 
-  ggplot(aes(x = year, y = lobster, color = mpa_status)) +
-  geom_line(linewidth = 1) +
-  geom_errorbar(aes(ymin = lobster - lobster_se, 
-                    ymax = lobster + lobster_se), 
-                width = 0.2, 
-                linewidth = .5, 
-                alpha = 1) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
-  ylab(bquote('Spiny lobsters per 60' ~ m^2)) +
-  xlab("Year") +
-  annotate("rect", fill = "red", alpha = 0.2, 
-           xmin = 2014, xmax = 2016,
-           ymin = -Inf, ymax = Inf) +
-  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
-  theme_bw() +
-  theme(legend.position = "bottom") +
-  inset_element(p = spiny_lobster,
-                left = 0.03,
-                bottom = 0.75,
-                right = 0.2,
-                top = 0.95) 
-
 lobster_plot <- inverts_data %>% 
   filter(region == "South_Coast") %>% 
   group_by(year, mpa_status) %>% 
@@ -162,7 +136,7 @@ lobster_plot <- inverts_data %>%
                 width = 0.2, 
                 linewidth = .5, 
                 alpha = 1) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab(bquote('Spiny lobsters per 60' ~ m^2)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
@@ -170,11 +144,11 @@ lobster_plot <- inverts_data %>%
            ymin = -Inf, ymax = Inf) +
   geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
   theme_bw() +
-  theme(legend.position = "none") +
+  theme(legend.position = c(0.13, 0.78)) +
   inset_element(p = spiny_lobster,
-                left = 0.03,
+                left = 0.24,
                 bottom = 0.75,
-                right = 0.2,
+                right = 0.41,
                 top = 0.95) 
 lobster_plot
 
@@ -191,7 +165,7 @@ sheephead_plot <- fish_data %>%
                 width = 0.2, 
                 linewidth = .5, 
                 alpha = 1) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab(bquote('California sheephead per 120' ~ m^3)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
@@ -222,7 +196,7 @@ biomass_plot <- fish_data %>%
                 width = 0.2, 
                 linewidth = .5, 
                 alpha = 1) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab(bquote('Sheephead biomass (kg) per 120' ~ m^3)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
@@ -240,15 +214,11 @@ biomass_plot <- fish_data %>%
 
 biomass_plot
 
-leg <- get_legend(lobster_plot_w_legend)
-
 combo_plot <- plot_grid(lobster_plot, 
                         sheephead_plot,
                         biomass_plot, 
-                        leg,
-                        rel_heights = c(1,1,1,.1),
-                        labels = c("A", "B", "C", ""), ncol = 1, hjust = 0.1)
-
+                        labels = c("A", "B", "C"), ncol = 1, hjust = 0.1)
+combo_plot
 ##### Export ###################################################################
 png("Figures/Urchins_PISCO.png", width = 9, height = 6, 
     units = "in", res = 600)
@@ -260,7 +230,7 @@ png("Figures/Urchins_per_region_PISCO.png", width = 9, height = 5,
 Urchins_per_region
 dev.off()
 
-png("Figures/Sheephead_lobsters_PISCO_v2.png", width = 6, height = 10, 
+png("Figures/Sheephead_lobsters_PISCO.png", width = 6, height = 10, 
     units = "in", res = 600)
 combo_plot
 dev.off()

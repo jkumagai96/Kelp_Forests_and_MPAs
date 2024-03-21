@@ -76,7 +76,7 @@ hist(data$CS_intensity)
 
 data2 <- data %>% dplyr::select(area, biomass, nitrate, #year,
                                 temperature, hsmax, depth, 
-                                gravity, MHW_intensity, CS_intensity, distance_to_coast)
+                                gravity, MHW_intensity, CS_intensity)
 # Removed year as it was too much for the computer 
 
 png("Figures/correlations_plot.png", 

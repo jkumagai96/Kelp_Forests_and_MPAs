@@ -22,16 +22,49 @@ maxes <- kelp_data_all %>%
 
 ##### Calculate Percent Recovery ###############################################
 # Calculate Percent Recovery for each row in the dataset from 2014 to 2021
-kelp_data <- kelp_data_all %>% 
+kelp_data_individual <- kelp_data_all %>% 
   filter(year >= 2014) %>% 
   left_join(maxes, by = "PixelID") %>% 
   select(PixelID, year, area, region, Mpa_ID, mpa_status, historic_baseline) %>% 
-  mutate(percent_recovery = area/historic_baseline) %>%
-  mutate(timeframe = ifelse(year > 2016, "after", "during")) %>% 
+  mutate(percent_recovery = area/historic_baseline) %>% 
+  mutate(timeframe = ifelse(year > 2016, "after", "during"))
+  
+kelp_data <- kelp_data_individual %>%   
   group_by(PixelID, region, mpa_status, timeframe) %>% 
   summarize(mean_pr = mean(percent_recovery)) %>% 
   ungroup() %>% 
   na.omit(percent_recovery)
+
+# Calculate total declines 
+kelp_data_individual %>% 
+  group_by(year, timeframe) %>% 
+  summarize(sum_area = sum(area), 
+            baseline = sum(historic_baseline, na.rm = T)) %>% 
+  group_by(timeframe) %>% 
+  summarize(mean_total_area = mean(sum_area), 
+            baseline = mean(baseline)) %>% 
+  mutate(p_loss = (1 - (mean_total_area / baseline))*100)
+
+kelp_data_individual %>% 
+  group_by(year, timeframe, region) %>% 
+  summarize(sum_area = sum(area), 
+            sum_baseline = sum(historic_baseline, na.rm = T)) %>% 
+  group_by(timeframe, region) %>% 
+  summarize(mean_total_area = mean(sum_area), 
+            baseline = mean(sum_baseline)) %>% 
+  mutate(p_loss = (1 - (mean_total_area / baseline))*100)
+
+# SI Table 5, relative area means and medians  
+kelp_data %>% 
+  group_by(timeframe, mpa_status) %>% 
+  summarise(median = median(mean_pr),
+    mean_pr = mean(mean_pr)) 
+
+kelp_data %>% 
+  group_by(timeframe, mpa_status, region) %>% 
+  summarise(median = median(mean_pr),
+            mean_pr = mean(mean_pr)) %>% 
+  arrange(region, timeframe)
 
 ##### Calculate True Values  ###################################################
 # Change global option to not print out message about group summaries 

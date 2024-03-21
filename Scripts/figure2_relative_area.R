@@ -46,12 +46,13 @@ kelp_data <- kelp_data_all %>%
   group_by(PixelID, region, mpa_status, timeframe) %>% 
   summarize(mean_pr = mean(percent_recovery)) %>% 
   ungroup() %>% 
-  na.omit(percent_recovery)# Making Figure 2 for real this time 
+  na.omit(percent_recovery) 
 
 ##### Format Data for Figure ###################################################
 kelp_data <- kelp_data %>% 
   mutate(timeframe = ifelse(timeframe == "after", "2017-2021", "2014-2016")) %>% 
-  mutate(mpa_status = factor(mpa_status, levels = c("Full", "Partial", "None"))) %>% 
+  mutate(mpa_status = ifelse(mpa_status == "None", "Unprotected", mpa_status)) %>% 
+  mutate(mpa_status = factor(mpa_status, levels = c("Full", "Partial", "Unprotected"))) %>% 
   mutate(region = ifelse(region == "Central_Coast", "Central", "Southern"))
 
 kelp_data2 <- kelp_data %>% 
@@ -59,37 +60,58 @@ kelp_data2 <- kelp_data %>%
 
 kelp_data_combo <- rbind(kelp_data, kelp_data2)
 
-##### Create FIgure ############################################################
+##### Create Figure ############################################################
 # Pallete 
-group.colors <- c(Full = "#440154", None = "#FFBA00", Partial ="#21918c")
+group.colors <- c(Full = "#440154", Unprotected = "#FFBA00", Partial ="#21918c")
 
-# Create base plot
-base <- ggboxplot(kelp_data_combo, 
-                  x = "mpa_status", 
-                  y = "mean_pr", 
-                  fill = "mpa_status",
-                  facet.by = c("region", "timeframe"),
-                  palette = group.colors, outlier.shape = NA) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), 
-                     limits = c(0, 3)) +
+# Create base plot 
+p <- ggplot(data = kelp_data_combo) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
+  geom_boxplot(aes(x = mpa_status, y = mean_pr, fill = mpa_status), outlier.shape = NA, color = "grey30") +
+  scale_fill_manual(values=group.colors) +
+  coord_cartesian(ylim = c(0,5)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   labs(y = "Relative Area", x = "") +
-  theme(legend.position = "none")
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
 
+base <- facet(p, facet.by = c("region", "timeframe")) +
+  theme(legend.position = "none") +
+  stat_summary(aes(x = mpa_status, y = mean_pr), fun = "mean", 
+               geom = "point", color = "black", pch = 21, fill = "white", size = 2.5)
 base
+# base <- ggboxplot(kelp_data_combo, 
+#                   x = "mpa_status", 
+#                   y = "mean_pr", 
+#                   fill = "mpa_status",
+#                   facet.by = c("region", "timeframe"),
+#                   palette = group.colors, outlier.shape = NA) +
+#   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
+#   scale_y_continuous(labels = scales::percent_format(accuracy = 1), 
+#                      limits = c(0, 3)) +
+#   labs(y = "Relative Area", x = "") +
+#   theme(legend.position = "none") 
+
+dat_text <- data.frame(
+  label = c("A", "D", "E", "B", "C", "F"),
+  region   = c("All", "Central", "Southern"),
+  timeframe = c("2014-2016", "2017-2021")
+)
 
 # Using the final results above make the stat.test tibble that the figure reads
 stat.test <- results_long %>% 
   mutate(group1 = c("Full", "Partial", "Full", "Full", "Partial", "Full",
                     "Full", "Partial", "Full", "Full", "Partial", "Full", 
                     "Full", "Partial", "Full", "Full", "Partial", "Full")) %>% 
-  mutate(group2 = c("None", "None", "Partial", "None", "None", "Partial", 
-                    "None", "None", "Partial", "None", "None", "Partial",
-                    "None", "None", "Partial", "None", "None", "Partial")) %>%
+  mutate(group2 = c("Unprotected", "Unprotected", "Partial", "Unprotected", "Unprotected", "Partial", 
+                    "Unprotected", "Unprotected", "Partial", "Unprotected", "Unprotected", "Partial",
+                    "Unprotected", "Unprotected", "Partial", "Unprotected", "Unprotected", "Partial")) %>%
   mutate(p.adj = pvalues*6) %>% 
   select(timeframe, region, group1, group2, p.adj) %>% 
-  mutate(y.position = c(2.85, 2.6, 2.6, 2.85, 2.6, 2.6,
-                        2.85, 2.6, 2.6, 2.85, 2.6, 2.6, 
-                        2.85, 2.6, 2.6, 2.85, 2.6, 2.6)) %>% 
+  mutate(y.position = c(4.25, 3.9, 3.9, 4.25, 3.9, 3.9,
+                        4.25, 3.9, 3.9, 4.25, 3.9, 3.9, 
+                        4.25, 3.9, 3.9, 4.25, 3.9, 3.9)) %>% 
   mutate("p.adj.signif" = c("***", "ns", "ns", "**", "ns", "ns",
                             "ns", "*", "ns", "ns", "ns", "ns", 
                             "***", "ns", "**","*", "ns", "*")) 
@@ -99,7 +121,16 @@ boxplot_pr_w_sig <- base +
                      label = "p.adj.signif", 
                      tip.length = .00003, 
                      bracket.shorten = .05) +
-  theme(strip.background =element_rect(fill="grey"))
+  theme(strip.background =element_rect(fill="grey")) +
+  geom_text(
+    data    = dat_text,
+    mapping = aes(x = -Inf, y = -Inf, label = label),
+    hjust   = -0.5,
+    vjust   = -20,
+    fontface = 2
+  ) 
+
+  
 
 boxplot_pr_w_sig 
 

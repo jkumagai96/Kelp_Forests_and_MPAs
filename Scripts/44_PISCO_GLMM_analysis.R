@@ -26,11 +26,8 @@ data_all <- read.csv("Processed_data/PISCO_data_summarized.csv") %>%
 # Declare Functions
 std <- function(x) sd(x, na.rm = TRUE)/sqrt(length(x))
 ##### Process Data #############################################################
-# Filter to just southern california 
-data_urchins <- data_all %>% 
-  filter(region == "South_Coast")
-
 glm_data <- data_urchins %>% 
+  filter(region == "South_Coast") %>% 
   mutate(
     heatwave = factor(heatwave, levels = c("before", "during", "after")), 
     site_name = factor(site), 
@@ -226,8 +223,8 @@ interaction_plot <- interaction_data %>%
                   position = position_dodge(width = 0.2), 
                   linewidth = 1) +
   facet_grid(cols = vars(region)) +
-  scale_color_manual(values=group.colors, name = "MPA Category") +
-  ylab("Response (NUmber of Urchins)") +
+  scale_color_manual(values=group.colors, name = "Protection Status") +
+  ylab(bquote('Model Response - Urchins per 60 ' ~m^2)) +
   theme_bw() +
   theme(legend.position = "none",
         panel.grid.major = element_blank()) +
@@ -247,9 +244,9 @@ Urchins_per_region <- data_all %>%
                 linewidth = .5, 
                 alpha = 0.4) +
   facet_grid(cols = vars(region)) +
-  scale_color_manual(values=group.colors, name = "MPA Category", 
+  scale_color_manual(values=group.colors, name = "Protection Status", 
                      labels = c("Full", "Partial", "Unprotected")) +
-  ylab('Number of Urchins') +
+  ylab(bquote('Urchins per 60 ' ~m^2)) +
   xlab("Year") +
   annotate("rect", fill = "red", alpha = 0.2, 
            xmin = 2014, xmax = 2016,
@@ -312,10 +309,10 @@ lobster1 <- as.data.frame(emmip(em1, ~PANINT_d, type = "response", CIs = TRUE, p
 lobster2 <- as.data.frame(emmip(em2, ~PANINT_d, type = "response", CIs = TRUE, plot = FALSE))
 
 plotdata <- do.call("rbind", list(
-  rename(mutate(sheephead1, model = "random intercepts", species = "Sheephead"), x = SPUL_d),
-  rename(mutate(sheephead2, model = "random intercepts + AR(1)", species = "Sheephead"), x = SPUL_d),
-  rename(mutate(lobster1, model = "random intercepts", species = "Lobster"), x = PANINT_d),
-  rename(mutate(lobster2, model = "random intercepts + AR(1)", species = "Lobster"), x = PANINT_d)))
+  rename(mutate(sheephead1, model = "random intercepts", species = "Number of Sheephead"), x = SPUL_d),
+  rename(mutate(sheephead2, model = "random intercepts + AR(1)", species = "Number of Sheephead"), x = SPUL_d),
+  rename(mutate(lobster1, model = "random intercepts", species = "Number of Lobsters"), x = PANINT_d),
+  rename(mutate(lobster2, model = "random intercepts + AR(1)", species = "Number of Lobsters"), x = PANINT_d)))
 
 plot1 <- plotdata |>
   ggplot(aes(x, yvar)) +
@@ -333,13 +330,13 @@ plot1 <- plotdata |>
     panel.grid.minor = element_blank(),
     axis.title.x = element_blank()
   ) + scale_x_continuous(breaks=c(0,5,10)) +
-  ylab("Urchins") 
+  ylab("Number of Urchins")
 
 plot1
 
 dat_text <- data.frame(
   label = c("p < 0.0001; p = 0.0008", "p = 0.0001; p = 0.31", "p < 0.0001; p = 0.035 ", "p = 0.74; p = 0.56"),
-  species = c("Sheephead", "Sheephead", "Lobster", "Lobster"),
+  species = c("Number of Sheephead", "Number of Sheephead", "Number of Lobsters", "Number of Lobsters"),
   model = c("random intercepts", "random intercepts + AR(1)", "random intercepts", "random intercepts + AR(1)")
 )
 

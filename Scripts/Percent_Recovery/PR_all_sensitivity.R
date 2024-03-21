@@ -37,7 +37,7 @@ kelp_data_after2013 <- kelp_data_all %>%
 ##### Remove lowest Pixels #####################################################
 total_area_after2013 <- sum(kelp_data_after2013$sum_area) 
 
-cutoff_percent <- .05
+cutoff_percent <- .30
 cutoff_area <- quantile(maxes$historic_baseline, cutoff_percent) # Based on historical values 
 
 cutoff_table <- maxes %>% 
@@ -150,7 +150,10 @@ after_pvalues <- data.frame("2017-2021",
 
 colnames(after_pvalues) <- c("timeframe","F_N", "P_N", "F_P")
 
-final_results <- rbind(during_pvalues, after_pvalues)
+final_results <- rbind(during_pvalues, after_pvalues) %>% 
+  mutate(F_N = p.adjust(F_N, method = "bonferroni", n = 6),
+         P_N = p.adjust(P_N, method = "bonferroni", n = 6),
+         F_P = p.adjust(F_P, method = "bonferroni", n = 6))
 
 filename <- paste0("Processed_data/data_tables/percent_recovery/pr_all_", cutoff_percent, ".csv")
 

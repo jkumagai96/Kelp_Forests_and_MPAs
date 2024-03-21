@@ -171,6 +171,13 @@ PISCO_data_summarized %>%
   summarize(n = n()) %>% 
   mutate(100*n/sum(n))
 
+PISCO_data_summarized %>% 
+  drop_na(urchin_d) %>% 
+  ungroup() %>% 
+  distinct(site, region) %>%
+  group_by(region) %>% 
+  summarize(n = n())
+
 ##### Combine data and export ##################################################
 PISCO_data_summarized <- full_join(fish_densities, invert_densities) %>% 
   mutate(heatwave = case_when(year < 2014 ~ "before", 
