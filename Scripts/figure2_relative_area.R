@@ -114,7 +114,7 @@ stat.test <- results_long %>%
                         4.25, 3.9, 3.9, 4.25, 3.9, 3.9)) %>% 
   mutate("p.adj.signif" = c("***", "ns", "ns", "**", "ns", "ns",
                             "ns", "*", "ns", "ns", "ns", "ns", 
-                            "***", "ns", "**","*", "ns", "*")) 
+                            "***", "ns", "**","*", "ns", "**")) 
 # create figure with significance bars 
 boxplot_pr_w_sig <- base + 
   stat_pvalue_manual(stat.test, 

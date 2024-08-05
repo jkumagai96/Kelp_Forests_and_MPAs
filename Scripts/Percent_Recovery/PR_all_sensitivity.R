@@ -12,6 +12,12 @@ library(sf)
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
 points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv") 
 
+percent_cutoffs <- c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3)
+
+for (i in 1:length(percent_cutoffs)) {
+  print(percent_cutoffs[i])
+
+
 ##### Format Data ##############################################################
 maxes <- kelp_data_all %>% 
   filter(year < 2014) %>% 
@@ -37,7 +43,8 @@ kelp_data_after2013 <- kelp_data_all %>%
 ##### Remove lowest Pixels #####################################################
 total_area_after2013 <- sum(kelp_data_after2013$sum_area) 
 
-cutoff_percent <- .30
+cutoff_percent <- percent_cutoffs[i]
+
 cutoff_area <- quantile(maxes$historic_baseline, cutoff_percent) # Based on historical values 
 
 cutoff_table <- maxes %>% 
@@ -159,4 +166,6 @@ filename <- paste0("Processed_data/data_tables/percent_recovery/pr_all_", cutoff
 
 write.csv(final_results, filename, row.names = F)
 
-final_results
+print(final_results)
+
+}

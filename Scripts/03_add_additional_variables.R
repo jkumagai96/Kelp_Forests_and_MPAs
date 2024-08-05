@@ -13,10 +13,11 @@ library(tidyverse)
 ##### Set up: load data ########################################################
 mpas_original_south <- read_sf("Data/Filtered_MPAs/MPAs_CA_Giant_Kelp.shp") %>% 
   st_transform(crs = 4326) %>% 
-  dplyr::select(Site_ID_12, Estab_Yr_1, AreaMar_12, Status_12)
+  dplyr::select(Site_ID_12, Site_Name_, Estab_Yr_1, AreaMar_12, Status_12) %>% 
+  rename("Site_Name" = "Site_Name_")
 
 mpas_original_north <- read_sf("Data/Filtered_MPAs/Nothern_California.shp") %>% 
-  dplyr::select(Site_ID, Estab_Yr, AreaMar, Status) %>% 
+  dplyr::select(Site_ID, Site_Name, Estab_Yr, AreaMar, Status) %>% 
   rename("Site_ID_12" = "Site_ID",
        "Estab_Yr_1" = "Estab_Yr",
        "AreaMar_12" = "AreaMar",
@@ -52,6 +53,13 @@ station_points <- st_as_sf(station_data,
 
 # Make sure the projections match 
 raster::crs(station_points) == raster::crs(mpas)
+
+# Adjust Abalone Cove and Farnsworth MPAs
+mpas <- mpas %>% 
+  mutate(mpa_status = case_when(Site_Name == "Abalone Cove State Marine Conservation Area" ~ "Full", 
+                                Site_Name == "Farnsworth Onshore (Catalina Island) State Marine Conservation Area" ~ "Full",
+                                .default = mpa_status)
+  ) %>% select(-Site_Name)
 
 # Export MPA data
 st_write(mpas, "Processed_data/MPAs.shp", append = FALSE)

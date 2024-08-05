@@ -10,15 +10,14 @@ library(modelsummary)
 library(tidyverse)
 
 # Load Data
-PISCO_data <- read.csv("Processed_data/PISCO_data_summarized.csv")
-sites_for_joining <- read.csv("Processed_data/data_tables/PISCO_sites_with_MPAs.csv") %>% 
-  rename(site = SITE)
+data_all <- read.csv("Processed_data/MLPA_data_summarized_wo_siteblocks.csv") 
+sites_for_joining <- read.csv("Processed_data/data_tables/MLPA_sites_with_MPAs.csv") 
 
 # Only biomass for sheephead >= 35cm https://royalsocietypublishing.org/doi/full/10.1098/rspb.2016.1936
 
 ##### Format Data ##############################################################
-data <- PISCO_data %>%  
-  rename(total_urchins = urchin_d) %>% 
+data <- data_all %>%  
+  rename(total_urchins = urchins_d) %>% 
   left_join(sites_for_joining) %>% 
   filter(region == "South_Coast") %>% 
   drop_na(total_urchins) %>% 
@@ -165,3 +164,4 @@ TWFE_hw_coefs <- tidy(MPA_hw_model,
                    conf.int = T) %>%
   filter(str_detect(term, ":")) %>%
   mutate(treatment = str_extract(term, "full|partial"))
+

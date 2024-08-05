@@ -20,13 +20,13 @@ sheephead_3 <- readPNG("Figures/Organisms/Sheephead_3.png", native = TRUE)
 spiny_lobster <- readPNG("Figures/Organisms/Spiny_Lobster_Figure_t.png", native = TRUE)
 
 # Load Data
-data_all <- read.csv("Processed_data/PISCO_data_summarized.csv") %>% 
+data_all <- read.csv("Processed_data/PISCO_data_summarized_new.csv") %>% 
   rename(total_urchins = urchin_d)
 
 # Declare Functions
 std <- function(x) sd(x, na.rm = TRUE)/sqrt(length(x))
 ##### Process Data #############################################################
-glm_data <- data_urchins %>% 
+glm_data <- data_all %>% 
   filter(region == "South_Coast") %>% 
   mutate(
     heatwave = factor(heatwave, levels = c("before", "during", "after")), 
@@ -62,6 +62,18 @@ total_urchins ~ heatwave*mpa_status +
   family  = tweedie(link = "log")
  ) 
 
+
+# Model nested - Random intercept and slopes 
+# Look up glmmTMB nested effects syntax
+# model_mpa_nested <- glmmTMB(
+#   total_urchins ~ heatwave*mpa_status + 
+#     (1 + year | site_block/site_name), 
+#   data = glm_data, 
+#   family  = tweedie(link = "log")
+# ) 
+
+
+
 # Random intercepts and autocorrelation structure 
 model_mpa3 <- glmmTMB(
    total_urchins ~ heatwave*mpa_status + 
@@ -90,10 +102,10 @@ z <- emmeans::emmeans(model_mpa2, pairwise ~ mpa_status | heatwave, type = "resp
 z
 
 write.csv(broom::tidy(z$emmeans), 
-          "Processed_data/data_tables/emmeans_model_mpa2.csv", 
+          "Processed_data/data_tables/emmeans_model_mpa2_new.csv", 
           row.names = F)
 write.csv(broom::tidy(z$contrasts), 
-          "Processed_data/data_tables/contrasts_model_mpa2.csv", 
+          "Processed_data/data_tables/contrasts_model_mpa2_new.csv", 
           row.names = F)
 
 ##### Central california model
@@ -144,9 +156,9 @@ z2
 emmeans(model_mpa2_central, pairwise ~ heatwave, type = "response")
 
 write.csv(broom::tidy(z2$emmeans), 
-          "Processed_data/data_tables/emmeans_model_mpa2_central.csv", row.names = F)
+          "Processed_data/data_tables/emmeans_model_mpa2_central_new.csv", row.names = F)
 write.csv(broom::tidy(z2$contrasts), 
-          "Processed_data/data_tables/contrasts_model_mpa2_central.csv", 
+          "Processed_data/data_tables/contrasts_model_mpa2_central_new.csv", 
           row.names = F)
 
 ##### GLMM Predator Prey models ################################################
@@ -358,13 +370,13 @@ plot_final <- ggdraw() +
 
 ##### Export Publication figures ###############################################
 # Modeling results plot
-png("Figures/GLMM_model_results_PISCO.png", width = 6, height = 6, 
+png("Figures/GLMM_model_results_PISCO_new.png", width = 6, height = 6, 
     units = "in", res = 600)
-plot_final
+plot1
 dev.off() 
 
 # Modeling interaction between protected areas and heatwave plot
-png("Figures/GLMM_heatwave_protection_plot_PISCO.png", width = 8, height = 8,
+png("Figures/GLMM_heatwave_protection_plot_PISCO_new.png", width = 8, height = 8,
     units = "in", res = 600)
 urchins_and_interactions_plot
 dev.off()
@@ -386,7 +398,7 @@ png("Figures/Residuals_m2_ar1_PISCO.png", width = 8, height = 5,
 plot(simulationOutput_m2)
 dev.off()
 
-png("Figures/Residuals_mpa_m2_PISCO.png", width = 8, height = 5,
+png("Figures/Residuals_mpa_m2_PISCO_new.png", width = 8, height = 5,
     units = "in", res = 600)
 plot(simulationOutput_mpa_m2)
 dev.off()

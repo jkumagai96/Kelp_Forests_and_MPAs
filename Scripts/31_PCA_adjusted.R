@@ -15,6 +15,9 @@ kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_an
 ##### Format Data ##############################################################
 kelp_data_all$mpa_status[kelp_data_all$mpa_status == "None"] <- "Unprotected"
 
+export_data <- kelp_data_all %>% select(-c(mean_area, min_area))
+write.csv(export_data, "Processed_data/Nur_Master_student_2024_July.csv", row.names = F)
+
 kelp_data_all <- kelp_data_all %>% 
   mutate(region = ifelse(region == "Central_Coast", "Central", "Southern"))
 

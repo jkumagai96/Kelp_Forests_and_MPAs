@@ -143,7 +143,7 @@ t <- size_classes_df %>%
   count(year)
 
 sample_size <- as.character(t$n)
-sample_size[15] <- paste("n =", sample_size[15])
+sample_size[16] <- paste("n =", sample_size[16])
 
 library(ggridges)
 cohort_plot <- ggplot(aes(x = fish_tl, y = yr, group = yr, fill = yr), data = size_classes_df) +
@@ -155,9 +155,9 @@ cohort_plot <- ggplot(aes(x = fish_tl, y = yr, group = yr, fill = yr), data = si
   theme_bw() +
   theme(legend.position = "none") + 
   geom_vline(xintercept = 30, color = "black") + 
-  scale_fill_manual(values = c(rep("grey", 7), rep("firebrick2", 3), rep("grey", 5))) +
+  scale_fill_manual(values = c(rep("grey", 7), rep("firebrick2", 3), rep("grey", 6))) +
   annotate("text", 
-           x = 90, y = 1.25:15.25, 
+           x = 90, y = 1.25:16.25, 
            size = 3, 
            hjust = 1,
            label = sample_size) +

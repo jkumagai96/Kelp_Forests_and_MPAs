@@ -11,7 +11,7 @@ library(png)
 library(patchwork)
 
 # Load Data
-data <- read.csv("Processed_data/PISCO_data_summarized.csv") %>% 
+data <- read.csv("Processed_data/PISCO_data_summarized_new.csv") %>% 
   mutate(mpa_status = ifelse(mpa_status == "Reference", "Unprotected", mpa_status))
 
 # Declare Functions 
@@ -220,17 +220,17 @@ combo_plot <- plot_grid(lobster_plot,
                         labels = c("A", "B", "C"), ncol = 1, hjust = 0.1)
 combo_plot
 ##### Export ###################################################################
-png("Figures/Urchins_PISCO.png", width = 9, height = 6, 
+png("Figures/Urchins_PISCO_new.png", width = 9, height = 6, 
     units = "in", res = 600)
 combo_urchin_plot
 dev.off()
 
-png("Figures/Urchins_per_region_PISCO.png", width = 9, height = 5, 
+png("Figures/Urchins_per_region_PISCO_new.png", width = 9, height = 5, 
     units = "in", res = 600)
 Urchins_per_region
 dev.off()
 
-png("Figures/Sheephead_lobsters_PISCO.png", width = 6, height = 10, 
+png("Figures/Sheephead_lobsters_PISCO_new.png", width = 6, height = 10, 
     units = "in", res = 600)
 combo_plot
 dev.off()

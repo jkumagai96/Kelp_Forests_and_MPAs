@@ -1,4 +1,4 @@
-# Date: February 5th 2024
+# Date: July 11th 2024
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Summarize PISCO raw data to site level data so that it can be analyzed
 # BIO 202: Ecological Statistics
@@ -10,12 +10,12 @@ library(readxl)
 library(sf)
 
 # Load Data
-PISCO_fish_raw <- read.csv("Data/PISCO subtidal data clearinghouse/PISCO_FISH.csv")
-PISCO_swath <- read.csv("Data/PISCO subtidal data clearinghouse/PISCO_SWATH.csv")
+fish_raw <- read.csv("Processed_data/mlpa_pisco_fish_combined.csv")
+swath <- read.csv("Processed_data/mlpa_pisco_swath_combined.csv")
 PISCO_master_species <- read_excel("Data/PISCO subtidal data clearinghouse/master_spp_table.xlsx")
-PISCO_master_sites <- read_excel("Data/PISCO subtidal data clearinghouse/PISCO subtidal master site table.xlsx")
+master_sites <- read.csv("Processed_data/Master_sites.csv")
 
-mpas <- st_read("Processed_data/MPAs.shp") # mpas
+mpas <- st_read("Processed_data/MPAs.shp") 
 
 ###### Decisions summarized
 # Looking at only central and southern california
@@ -34,31 +34,26 @@ mpas <- st_read("Processed_data/MPAs.shp") # mpas
 year_cutoff <- 2002
 
 ###### Create PISCO sites dataset with MPA data  ###############################
-site_points <- PISCO_master_sites %>% 
-  mutate(longitude = as.numeric(LONGITUDE), 
-         latitude = as.numeric(LATITUDE)) %>% 
-  mutate(region = ifelse(latitude > 34.4486, "Central_Coast", "South_Coast")) %>% 
-  mutate(region = ifelse(latitude > 37.1819, "North_Central_Coast", region)) %>% 
-  mutate(region = ifelse(latitude > 39.0044, "North_Coast", region)) %>% 
+site_points <- master_sites %>% 
+  mutate(region = case_when(latitude > 39.0044 ~ "North_Coast",
+                            latitude > 37.1819 ~ "North_Central_Coast", 
+                            latitude > 34.43 ~ "Central_Coast", # Adjusted from MPA to make sure sights are in correct regions
+                            .default = "South_Coast")) %>% 
   filter(region == "South_Coast" | region == "Central_Coast") %>% 
-  drop_na(longitude) %>% 
   st_as_sf(., coords = c(x = "longitude", y = "latitude"), crs = 4326)  
 
 # Intersect site data with mpas 
 sites_in_mpas <- st_intersection(site_points, mpas) %>% 
   st_drop_geometry() %>% 
-  dplyr::select(SITE, LATITUDE, LONGITUDE, Site_ID_12, Estab_Yr_1, AreaMar_12, mpa_status)
+  dplyr::select(site, region, Site_ID_12, Estab_Yr_1, AreaMar_12, mpa_status)
 
 site_points <- site_points %>% 
-  dplyr::select(-REGION) %>% 
-  left_join(sites_in_mpas, by = c("SITE", "LATITUDE", "LONGITUDE"))
+  left_join(sites_in_mpas, by = c("site", "region"))
 
 site_points$mpa_status[is.na(site_points$mpa_status)] <- "Reference"
 
-sites_for_joining_spatial <- site_points %>% 
-  dplyr::select(SITE, site_status, Site_ID_12, Estab_Yr_1, AreaMar_12, mpa_status, region)
-
-sites_for_joining <- st_drop_geometry(sites_for_joining_spatial)
+sites_for_joining_spatial <- site_points
+sites_for_joining <- st_drop_geometry(site_points)
 
 # Export PISCO sites for joining 
 st_write(sites_for_joining_spatial, "Processed_data/PISCO_sites_with_MPAs.shp", append = FALSE)
@@ -66,57 +61,54 @@ write.csv(sites_for_joining, "Processed_data/data_tables/PISCO_sites_with_MPAs.c
 
 ##### Create unique transects ##################################################
 # Count the number of distinct transects 
-distinct_transects_fish <- PISCO_fish_raw %>% 
+distinct_transects_fish <- fish_raw %>% 
   filter(year >= year_cutoff,
          level == "BOT") %>% 
-  distinct(campus, method, year, month, day, site, zone, transect) %>% 
-  left_join(sites_for_joining, by = c("site" = "SITE")) %>% 
+  distinct(campus, year, month, day, site, zone, transect) %>% 
+  left_join(sites_for_joining, by = "site") %>% 
   filter(region == "South_Coast" |
            region == "Central_Coast")
 
-distinct_transects_inverts <- PISCO_swath %>% 
+distinct_transects_inverts <- swath %>% 
   filter(year >= year_cutoff) %>% 
-  distinct(campus, method, year, month, day, site, zone, transect) %>% 
-  left_join(sites_for_joining, by = c("site" = "SITE")) %>% 
+  distinct(campus, year, month, day, site, zone, transect) %>% 
+  left_join(sites_for_joining, by = "site") %>% 
   filter(region == "South_Coast" |
            region == "Central_Coast")
 
 ##### Look up unique species codes #############################################
 test <- PISCO_master_species %>% 
   filter(ScientificName == "Semicossyphus pulcher" |         # California sheephead
-         ScientificName == "Mesocentrotus franciscanus" |    # Red urchin
-         ScientificName == "Strongylocentrotus purpuratus" | # Purple urchin
-         ScientificName == "Centrostephanus coronatus" |     # crowned urchin
-         ScientificName == "Panulirus interruptus") %>%      # Spiny lobster
+           ScientificName == "Mesocentrotus franciscanus" |    # Red urchin
+           ScientificName == "Strongylocentrotus purpuratus" | # Purple urchin
+           ScientificName == "Panulirus interruptus") %>%      # Spiny lobster
   filter(sample_type == "SWATH"  |
-         sample_type == "FISH")
+           sample_type == "FISH")
 
 view(test)
 # Species codes:
-# CENCOR = Crowned Urchin
 # MESFRAAD = Red Urchin
 # STRPURAD = Purple Urchin
 # PANINT = Spiny lobsters
 # SPUL = California sheephead 
 
 ##### Format PISCO raw fish data ###############################################
-PISCO_fish <- PISCO_fish_raw %>% 
-  filter(fish_tl >= 10) %>% # IMPORTANT TO FOLLOW PISCO PROCESSING!!!!! 
+PISCO_MLPA_fish <- fish_raw %>% 
+  filter(fish_tl >= 15) %>% # Adjusted to 15cm!!!!!! 
   filter(year >= year_cutoff,
          level == "BOT") %>% 
-  filter(classcode == "SPUL") %>% 
-  select(-c(depth, observer, notes, sex, surge))
+  filter(classcode == "SPUL") 
 
 
-fish <- PISCO_fish %>% 
-  group_by(campus, method, year, month, day, site, zone, transect) %>% 
+fish <- PISCO_MLPA_fish %>% 
   mutate(biomass = (count*((0.0144)*fish_tl^3.04))) %>% 
+  group_by(campus, year, month, day, site, zone, transect) %>% 
   # total length is in cm and biomass is in g
   summarize(total_count = sum(count), 
             total_biomass = sum(biomass, na.rm = T))
 
 fish_densities <- distinct_transects_fish %>% 
-  left_join(fish, by = c("campus", "method", "year", "month", "day", "site", "zone", "transect")) %>% 
+  left_join(fish, by = c("campus", "year", "month", "day", "site", "zone", "transect")) %>% 
   replace_na(list(total_count = 0,
                   total_biomass = 0)) %>% 
   group_by(year, mpa_status, site, region) %>% 
@@ -124,37 +116,40 @@ fish_densities <- distinct_transects_fish %>%
             biomass_d = mean(total_biomass))
 
 ##### Format PISCO raw inverts data ############################################
-inverts <- PISCO_swath %>% 
+inverts <- swath %>% 
   filter(year >= year_cutoff) %>% 
-  filter(classcode == "CENCOR" |
-           classcode == "MESFRAAD" |
+  filter(classcode == "MESFRAAD" |
            classcode == "STRPURAD" |
            classcode == "PANINT") %>% 
   pivot_wider(names_from = classcode, values_from = count) %>% 
-  select(-c(disease, depth, observer, notes, survey_year)) %>% 
-  group_by(campus, method, year, month, day, site, zone, transect) %>% 
-  summarize(CENCOR = sum(CENCOR, na.rm = T),
-            MESFRAAD = sum(MESFRAAD, na.rm = T),
+  group_by(campus, year, month, day, site, zone, transect) %>% 
+  summarize(MESFRAAD = sum(MESFRAAD, na.rm = T),
             STRPURAD = sum(STRPURAD, na.rm = T),
             PANINT = sum(PANINT, na.rm = T))
 
-inverts$total_urchins <- rowSums(inverts[,10:12], na.rm = TRUE, dims = 1)
+inverts$total_urchins <- rowSums(inverts[,c("MESFRAAD", "STRPURAD")], na.rm = TRUE, dims = 1)
 
 invert_densities <- distinct_transects_inverts %>% 
-  left_join(inverts, by = c("campus", "method", "year", "month", "day", "site", "zone", "transect")) %>% 
+  left_join(inverts, by = c("campus", "year", "month", "day", "site", "zone", "transect")) %>% 
   replace_na(list(PANINT = 0,
-                  CENCOR = 0,
                   MESFRAAD = 0,
                   STRPURAD = 0, 
                   total_urchins = 0)) %>% 
   group_by(year, mpa_status, site, region) %>% 
   summarise(urchin_d = mean(total_urchins),
             PANINT_d = mean(PANINT), 
-            CENCOR_d = mean(CENCOR), 
             MESFRAAD_d = mean(MESFRAAD),
             STRPURAD_d = mean(STRPURAD))
-  
+
 # Each individual transect is weighted equally due to the distinct transects
+
+##### Combine data and export ##################################################
+PISCO_data_summarized <- full_join(fish_densities, invert_densities) %>% 
+  mutate(heatwave = case_when(year < 2014 ~ "before", 
+                              year > 2016 ~ "after", 
+                              .default = "during"),
+         heatwave = factor(heatwave, 
+                           levels = c("before", "during", "after")))
 
 # How many sites per region / mpa_status
 PISCO_data_summarized %>% 
@@ -178,14 +173,7 @@ PISCO_data_summarized %>%
   group_by(region) %>% 
   summarize(n = n())
 
-##### Combine data and export ##################################################
-PISCO_data_summarized <- full_join(fish_densities, invert_densities) %>% 
-  mutate(heatwave = case_when(year < 2014 ~ "before", 
-                              year > 2016 ~ "after", 
-                              .default = "during"),
-         heatwave = factor(heatwave, 
-                           levels = c("before", "during", "after")))
-
+# Export
 write.csv(PISCO_data_summarized, 
-          "Processed_data/PISCO_data_summarized.csv",
+          "Processed_data/PISCO_data_summarized_new.csv",
           row.names = F)

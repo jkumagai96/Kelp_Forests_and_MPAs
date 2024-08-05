@@ -15,12 +15,12 @@ points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_an
 points_in_mpas %>% distinct(Site_ID_12, Estab_Yr_1, region) %>% group_by(region, Estab_Yr_1) %>% summarize(n = n())
 
 ##### Format Data ##############################################################
-# Restrict just to central California 
+# Restrict just to south California 
 kelp_data_all <- kelp_data_all %>% 
-  filter(region == "Central_Coast")
+  filter(region == "South_Coast")
 
 points_in_mpas <- points_in_mpas %>% 
-  filter(region == "Central_Coast")
+  filter(region == "South_Coast")
 
 # Set cutoff year for delineation between old and new 
 cutoff_yr <- 2006
@@ -160,7 +160,7 @@ final_results <- rbind(during_pvalues, after_pvalues) %>%
          F_P = p.adjust(F_P, method = "bonferroni", n = 6))
 
 final_results
-write.csv(final_results, "Processed_data/data_tables/percent_recovery/pr_new_mpas_central.csv", row.names = F)
+write.csv(final_results, "Processed_data/data_tables/percent_recovery/pr_new_mpas_south.csv", row.names = F)
 
 ##### Figures ##################################################################
 # Format Data into long format
@@ -175,11 +175,11 @@ rm(list=setdiff(ls(), c("kelp_data_new", "cutoff_yr")))
 kelp_data_all <- read.csv("Processed_data/data_tables/kelp_data_all_variables_and_mpa_status_per_year.csv")
 points_in_mpas <- read.csv("Processed_data/data_tables/Spatial_intersect_mpas_and_station_points.csv") 
 
-# Restrict just to centralern California 
+# Restrict just to Southern California 
 kelp_data_all <- kelp_data_all %>% 
-  filter(region == "Central_Coast")
+  filter(region == "South_Coast")
 points_in_mpas <- points_in_mpas %>% 
-  filter(region == "Central_Coast")
+  filter(region == "South_Coast")
 
 maxes <- kelp_data_all %>% 
   filter(year < 2014) %>% 
@@ -312,7 +312,7 @@ final_results <- rbind(during_pvalues, after_pvalues) %>%
          F_P = p.adjust(F_P, method = "bonferroni", n = 6))
 
 final_results
-write.csv(final_results, "Processed_data/data_tables/percent_recovery/pr_old_mpas_central.csv", row.names = F)
+write.csv(final_results, "Processed_data/data_tables/percent_recovery/pr_old_mpas_south.csv", row.names = F)
 
 # Format Data into long format
 results_long <- final_results %>% 
@@ -328,9 +328,9 @@ library(ggpubr)
 library(rstatix)
 
 # Significance Data
-final_results_new<- read.csv("Processed_data/data_tables/percent_recovery/pr_new_mpas_central.csv") %>% 
+final_results_new<- read.csv("Processed_data/data_tables/percent_recovery/pr_new_mpas_south.csv") %>% 
   mutate(age = "new")
-final_results_old <- read.csv("Processed_data/data_tables/percent_recovery/pr_old_mpas_central.csv") %>% 
+final_results_old <- read.csv("Processed_data/data_tables/percent_recovery/pr_old_mpas_south.csv") %>% 
   mutate(age = "old")
 
 kelp_data <- rbind(kelp_data_old, kelp_data_new) %>% 
@@ -369,8 +369,8 @@ stat.test <- results_long %>%
   select(timeframe, age, group1, group2, pvalues) %>% 
   mutate(y.position = c(4.85, 4.6, 4.6, 4.85, 4.6, 4.6,
                         4.85, 4.6, 4.6, 4.85, 4.6, 4.6)) %>% 
-  mutate("p.adj.signif" = c("ns", "ns", "ns","ns", "ns", "ns",
-                            "ns", "*", "ns", "ns", "ns", "ns")) 
+  mutate("p.adj.signif" = c("***", "ns", "*","ns", "ns", "ns",
+                            "**", "ns", "ns", "ns", "ns", "*")) 
 # create figure with significance bars 
 boxplot_pr_w_sig <- base + 
   stat_pvalue_manual(stat.test, 
@@ -381,7 +381,7 @@ boxplot_pr_w_sig <- base +
 
 boxplot_pr_w_sig 
 
-png("Figures/Percent_recovery/pr_boxplot_w_sig_MPA_age_central.png", 
+png("Figures/Percent_recovery/pr_boxplot_w_sig_MPA_age_South.png", 
     width = 6, 
     height = 6, 
     units = "in", 
