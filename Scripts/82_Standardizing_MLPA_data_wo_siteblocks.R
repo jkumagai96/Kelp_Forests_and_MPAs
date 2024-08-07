@@ -140,7 +140,8 @@ inverts <- mlpa_swath %>%
             STRPURAD = sum(STRPURAD, na.rm = T),
             PANINT = sum(PANINT, na.rm = T),
             MACPYRAD = sum(MACPYRAD, na.rm = T),
-            NERLUE = sum(NERLUE, na.rm = T))
+            NERLUE = sum(NERLUE, na.rm = T),
+            kelp = sum(MACPYRAD, NERLUE, na.rm = T))
 
 inverts$total_urchins <- rowSums(inverts[,c("MESFRAAD", "STRPURAD")], na.rm = TRUE, dims = 1)
 
@@ -151,7 +152,8 @@ invert_densities <- distinct_transects_inverts %>%
                   STRPURAD = 0, 
                   total_urchins = 0,
                   MACPYRAD = 0,
-                  NERLUE = 0)) %>% 
+                  NERLUE = 0,
+                  kelp = 0)) %>% 
   group_by(year, mpa_status, site, region) %>% 
   summarise(n_transects = n(),
             urchin_total = sum(total_urchins),
@@ -161,7 +163,8 @@ invert_densities <- distinct_transects_inverts %>%
             urchins_d = mean(total_urchins),
             MACPYRAD_d = mean(MACPYRAD),
             total_giant_kelp = sum(MACPYRAD), 
-            NERLUE_d = mean(NERLUE)) %>% 
+            NERLUE_d = mean(NERLUE),
+            kelp_d = mean(kelp)) %>% 
   ungroup()
 
 # Each individual transect is weighted equally due to the distinct transects

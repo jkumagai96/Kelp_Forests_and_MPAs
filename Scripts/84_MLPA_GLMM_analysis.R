@@ -1,6 +1,6 @@
 # Date:July 24th 2024
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
-# Purpose: Run linear regression statistics on MLPA data without site blc=ocks
+# Purpose: Run linear regression statistics on MLPA data without site blocks
 # BIO 202: Ecological Statistics
 
 ##### Load Packages and Data ###################################################
