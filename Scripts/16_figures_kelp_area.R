@@ -129,3 +129,19 @@ png("Figures/Kelp_area_central_south.png", width = 10, height = 7,
 combo_plot
 dev.off() 
 
+##### How much kelp loss was there in each region? during and after heatwave #####
+total_avg_kelp <- kelp_data_all %>% 
+  filter(year > 2013) %>% 
+  mutate(heatwave = case_when(year > 2016 ~ "after", 
+                              .default = "during")) %>% 
+  group_by(year, region, heatwave) %>% 
+  summarize(sum_area = sum(area)) %>% 
+  group_by(region, heatwave) %>% 
+  summarize(mean_total_area = mean(sum_area)) %>% 
+  pivot_wider(names_from = region, values_from = mean_total_area) 
+
+total_avg_kelp$Central_Coast/1e6
+total_avg_kelp$South_Coast/1e6
+
+1 - total_avg_kelp$Central_Coast/maxes$baseline[1]  
+1 - total_avg_kelp$South_Coast/maxes$baseline[2]

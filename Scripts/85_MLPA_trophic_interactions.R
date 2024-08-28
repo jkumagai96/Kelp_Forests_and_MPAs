@@ -117,7 +117,7 @@ plot1_s <- plotdata |>
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank()) +
   ylab(bquote('Giant kelp per 60 ' ~m^2)) +
-  xlab("Urchins")
+  xlab(bquote('Urchins per 60 ' ~m^2)) 
 
 plot1_s
 
@@ -126,7 +126,7 @@ model_giant1_c <- glmmTMB(
   MACPYRAD_d ~ poly(urchins_d, 2) +
     (1 | site), 
   data = glm_data_central, family = tweedie(link = "log")
-) # Between nbinom1, nbinom2, and poisson. nbinom1 gives the best residuals
+) 
 
 simulationOutput_giant1_c <- simulateResiduals(model_giant1_c, plot = F)
 plot(simulationOutput_giant1_c)
@@ -206,11 +206,15 @@ plotdata2 <- do.call("rbind", list(
   rename(mutate(lobster1, model = "random intercepts", species = "Lobsters"), x = PANINT_d)))
 
 
-plot2 <- plotdata2 |>
+plotdata_x <- transform(plotdata2, species = factor(species, levels=c("Lobsters", "Sheephead"),
+                                    labels=c("Lobster~per~60~m^2", "Sheephead~per~60~m^2")))
+plot2 <- plotdata_x |>
   ggplot(aes(x, yvar)) +
   geom_ribbon(aes(ymin = LCL, ymax = UCL, fill = species), alpha = 0.5) +
   geom_line(aes(color = species)) +
-  facet_grid(~species, scales = "free_x", switch = "x") +
+  facet_grid(~species, 
+             scales = "free_x", switch = "x", 
+             labeller = label_parsed) +
   scale_color_manual(values = c("#D55E00", "#D55E00")) +
   scale_fill_manual(values = c("#D55E00", "#D55E00")) +
   theme_minimal()  +
@@ -223,7 +227,6 @@ plot2 <- plotdata2 |>
     axis.title.x = element_blank()
   ) + scale_x_continuous(breaks=c(0,5,10)) +
   ylab(bquote('Giant kelp per 60 ' ~m^2)) 
-
 
 plot2
 
@@ -240,6 +243,25 @@ plot(simulationOutput_pp)
 
 summary(model_pp)
 
+# Test fit with tweeide family 
+model_pp2 <- glmmTMB(
+  urchins_d ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
+    (1 | site), 
+  data = glm_data_south, family = tweedie(link = "log")
+) 
+
+simulationOutput_pp2 <- simulateResiduals(model_pp2, plot = F)
+plot(simulationOutput_pp2) 
+
+# Test random slopes 
+model_pp3 <- glmmTMB(
+  urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
+    offset(log(n_transects)) + 
+    (1 + year_fct | site), 
+  data = glm_data_south, family = nbinom1(link = "log")
+) # convergence issues 
+
+
 em1 <- ref_grid(model_pp, at = list(SPUL_d = seq(0, 12, length.out = 100)), offset = log(1))
 
 sheephead1 <- as.data.frame(emmip(em1, ~SPUL_d, type = "response", CIs = TRUE, plot = FALSE))
@@ -252,11 +274,16 @@ plotdata3 <- do.call("rbind", list(
   rename(mutate(sheephead1, model = "random intercepts", species = "Sheephead"), x = SPUL_d),
   rename(mutate(lobster1, model = "random intercepts", species = "Lobsters"), x = PANINT_d)))
 
-plot3 <- plotdata3 |>
+plotdata_3 <- transform(plotdata3, species = factor(species, levels=c("Lobsters", "Sheephead"),
+                                                    labels=c("Lobster~per~60~m^2", "Sheephead~per~60~m^2")))
+
+
+plot3 <- plotdata_3 |>
   ggplot(aes(x, yvar)) +
   geom_ribbon(aes(ymin = LCL, ymax = UCL, fill = species), alpha = 0.5) +
   geom_line(aes(color = species)) +
-  facet_grid(~species, scales = "free_x", switch = "x") +
+  facet_grid(~species, scales = "free_x", switch = "x", 
+             labeller = label_parsed) +
   scale_color_manual(values = c("#0072B2", "#0072B2")) +
   scale_fill_manual(values = c("#0072B2", "#0072B2")) +
   theme_minimal()  +
@@ -280,12 +307,12 @@ plot_final <- ggdraw() +
   draw_plot(plot_raw) + 
   draw_image(urchin_lobster, x = -0.34, y = -0.06, scale = 0.11) +
   draw_image(urchin_sheephead, x = 0.12, y = -0.06, scale = 0.11) +
-  draw_image(kelp_urchin, x = -0.34, y = 0.26, scale = 0.11) + # giant kelp vs. urchins
-  draw_image(kelp_lobster, x = -0.35, y = -0.35, scale = 0.11)  + # giant kelp vs. lobsters
+  draw_image(kelp_urchin, x = -0.34, y = 0.27, scale = 0.11) + # giant kelp vs. urchins
+  draw_image(kelp_lobster, x = -0.34, y = -0.33, scale = 0.11)  + # giant kelp vs. lobsters
   draw_image(kelp_sheephead, x = 0.12, y = -0.35, scale = 0.11) + # giant kelp vs. sheephead 
   annotate("text", x = 0.86, y = 0.96, label = "p < 0.0001; p = 0.1", fontface = "bold") +
-  annotate("text", x = 0.41, y = 0.63, label = "p < 0.0001; p < 0.001", fontface = "bold") +
-  annotate("text", x = 0.85, y = 0.63, label = "p < 0.0001; p < 0.0001", fontface = "bold") +
+  annotate("text", x = 0.39, y = 0.63, label = "p < 0.0001; p < 0.0001", fontface = "bold") +
+  annotate("text", x = 0.85, y = 0.63, label = "p < 0.0001; p = 0.059", fontface = "bold") +
   annotate("text", x = 0.43, y = 0.3, label = "p < 0.0001", fontface = "bold") +
   annotate("text", x = 0.92, y = 0.3, label = "p = 0.8")
 

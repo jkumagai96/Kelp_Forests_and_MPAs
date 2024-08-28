@@ -1,4 +1,4 @@
-# Date:  July 24th 2024
+# Date:  August 25th 2024
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Clean MLPA data without site_blocks
 # BIO 202: Ecological Statistics
@@ -10,7 +10,7 @@ library(readxl)
 library(sf)
 
 # Load MLPA Data
-MLPA_master_sites <- read.csv("Data/resourceMap_MLPA_kelpforest_7/data/MLPA_kelpforest_site_table.6.csv")
+MLPA_master_sites <- read.csv("Data/resourceMap_MLPA_kelpforest_9/data/MLPA_kelpforest_site_table.6.csv")
 
 # Load MLPA duplicated sites that are now corrected
 corrected_sites <- read_xlsx("Processed_data/Corrected_MLPA_PISCO_sites.xlsx", sheet = 2) %>% 

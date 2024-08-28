@@ -1,4 +1,4 @@
-# Date:  July 24th 2024
+# Date:  August 25th 2024
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Prepare the MLPA data for analysis without site blocks
 # BIO 202: Ecological Statistics
@@ -8,9 +8,9 @@
 library(tidyverse)
 
 # Load MLPA Data
-MLPA_fish_raw <- read.csv("Data/resourceMap_MLPA_kelpforest_7/data/MLPA_kelpforest_fish.6.csv")
-MLPA_swath <- read.csv("Data/resourceMap_MLPA_kelpforest_7/data/MLPA_kelpforest_swath.6.csv")
-MLPA_master_species <- read.csv("Data/resourceMap_MLPA_kelpforest_7/data/MLPA_kelpforest_taxon_table.6.csv")
+MLPA_fish_raw <- read.csv("Data/resourceMap_MLPA_kelpforest_9/data/MLPA_kelpforest_fish.6.csv")
+MLPA_swath <- read.csv("Data/resourceMap_MLPA_kelpforest_9/data/MLPA_kelpforest_swath.7.csv")
+MLPA_master_species <- read.csv("Data/resourceMap_MLPA_kelpforest_9/data/MLPA_kelpforest_taxon_table.7.csv")
 MLPA_sites <- read.csv("Processed_data/data_tables/MLPA_sites_with_MPAs.csv") 
 
 # Outline of steps: 

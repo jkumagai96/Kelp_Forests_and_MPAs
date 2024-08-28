@@ -34,6 +34,30 @@ central_df <- data_all %>%
 south_df <- data_all %>% 
   filter(region == "South_Coast")
 
+##### Plot data ################################################################
+
+data_all %>% 
+  mutate(region = ifelse(region == "Central_Coast", "Central", "Southern")) %>% 
+  group_by(year, region) %>% 
+  summarise(total = mean(kelp_d)/60,
+            total_se = std(kelp_d)/60) %>% 
+  ggplot(aes(x = year, y = total)) +
+  geom_line(linewidth = 1) +
+  geom_errorbar(aes(ymin = total - total_se, 
+                    ymax = total + total_se), 
+                width = 0.2, 
+                linewidth = .5, 
+                alpha = 1) +
+  facet_grid(cols = vars(region)) +
+  ylab("Number of Kelp") +
+  ylab(bquote('Kelp per ' ~ m^2)) +
+  annotate("rect", fill = "red", alpha = 0.2, 
+           xmin = 2014, xmax = 2016,
+           ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = 2012, linetype = "dashed", linewidth = 0.7) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+
 ##### Statistical Modeling #####################################################
 ### Southern California
 # Model 1 - random intercepts

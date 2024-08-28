@@ -110,7 +110,7 @@ car::Anova(model_mpa2)
 summary(model_mpa1)
 summary(model_mpa2)
 
-AIC(model_mpa1, model_mpa2)
+AIC(model_mpa1, model_mpa2, model_mpa3)
 # Model 2 is chosen, AIC is better and then it is consistent with central california 
 
 emmeans::emmeans(model_mpa1, pairwise ~ heatwave, type = "response", offset = log(1/60))

@@ -119,11 +119,11 @@ TWFE_urchins_plot <- ggplot(data = TWFE_coefs,
   geom_segment(x = -0.5, xend = 20,
                y = DiD_coefs$estimate[DiD_coefs$term == "post:partial"],
                yend = DiD_coefs$estimate[DiD_coefs$term == "post:partial"],
-               color = "#440154") +
+               color = "#21918c") +
   geom_segment(x = -0.5, xend = 20,
                y = DiD_coefs$estimate[DiD_coefs$term == "post:full"],
                yend = DiD_coefs$estimate[DiD_coefs$term == "post:full"],
-               color = "#21918c") +
+               color = "#440154") +
   geom_pointrange(aes(ymin = conf.low,
                       ymax = conf.high),
                   fatten = 2) +

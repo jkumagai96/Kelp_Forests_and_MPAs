@@ -73,7 +73,7 @@ sample_size <- as.character(sampling_effort$n)
 sample_size[22] <- paste("n =", sample_size[22])
 
 df <- sheephead_by_size %>% 
-  select(year, fish_tl, total_count) %>% 
+  dplyr::select(year, fish_tl, total_count) %>% 
   uncount(total_count) %>% 
   mutate(year = as.factor(year))
 
