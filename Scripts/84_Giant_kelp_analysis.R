@@ -186,7 +186,7 @@ interaction_plot <- interaction_data %>%
                   linewidth = 1) +
   facet_grid(cols = vars(region)) +
   scale_color_manual(values=group.colors, name = "Protection Status") +
-  ylab(bquote('Model Response - Kelp per ' ~m^2)) +
+  ylab(bquote('Model Response - Adult Kelps per ' ~m^2)) +
   theme_bw() +
   theme(legend.position = "none",
         panel.grid.major = element_blank()) +
@@ -209,7 +209,7 @@ kelp_per_region <- data_all %>%
   facet_grid(cols = vars(region)) +
   scale_color_manual(values=group.colors, name = "Protection Status") +
   ylab("Number of Kelp") +
-  ylab(bquote('Kelp per ' ~ m^2)) +
+  ylab(bquote('Adult Kelps per ' ~ m^2)) +
   annotate("rect", fill = "red", alpha = 0.2, 
            xmin = 2014, xmax = 2016,
            ymin = -Inf, ymax = Inf) +

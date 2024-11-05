@@ -215,6 +215,12 @@ write.csv(broom::tidy(z2$contrasts),
            row.names = F)
 
 ##### Model effects plots #####################################################
+
+# Extract standard deviation of random effect
+sigma_re_s <- as.numeric(glmmTMB::VarCorr(model_mpa2)$cond$site)
+sigma_re_c <- as.numeric(glmmTMB::VarCorr(model_mpa2_central)$cond$site_name)
+
+# Estimates
 is_data <- as.data.frame(emmeans::emmeans(model_mpa2, "heatwave", by = "mpa_status", type = "response", offset = log(1/60))) %>%
   mutate(region = "Southern")
 ic_data <- as.data.frame(emmeans::emmeans(model_mpa2_central, "heatwave", by = "mpa_status", type = "response", offset = log(1/60))) %>%

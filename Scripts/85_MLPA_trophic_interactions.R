@@ -98,9 +98,10 @@ plot(simulationOutput_giant1_s_ar1)
 
 summary(model_giant1_s)
 
+sigma_re_giant1_s <- sqrt(as.numeric(glmmTMB::VarCorr(model_giant1_s)$cond$site))
 em1 <- ref_grid(model_giant1_s, at = list(urchins_d = seq(0, 1000, length.out = 100)))
 
-giantkelp1_s <- as.data.frame(emmip(em1, ~urchins_d, type = "response", CIs = TRUE, plot = FALSE))
+giantkelp1_s <- as.data.frame(emmip(em1, ~urchins_d, type = "response", CIs = TRUE, plot = FALSE, bias.adjust = TRUE, sigma = sigma_re_giant1_s))
 
 plotdata <- do.call("rbind", list(
   rename(mutate(giantkelp1_s, x = urchins_d))))
@@ -109,7 +110,7 @@ plot1_s <- plotdata |>
   ggplot(aes(x, yvar)) +
   geom_ribbon(aes(ymin = LCL, ymax = UCL), fill = "darkorchid4", alpha = 0.5) +
   geom_line(color = "darkorchid4") +
-  theme_minimal()  +
+  theme_minimal() +
   theme(
     panel.border = element_rect(fill = NA),
     legend.position = "bottom",
@@ -122,42 +123,44 @@ plot1_s <- plotdata |>
 plot1_s
 
 # Central California
-model_giant1_c <- glmmTMB(
-  MACPYRAD_d ~ poly(urchins_d, 2) +
-    (1 | site), 
-  data = glm_data_central, family = tweedie(link = "log")
-) 
+# model_giant1_c <- glmmTMB(
+#   MACPYRAD_d ~ poly(urchins_d, 2) +
+#     (1 | site), 
+#   data = glm_data_central, family = tweedie(link = "log")
+# ) 
+# 
+# simulationOutput_giant1_c <- simulateResiduals(model_giant1_c, plot = F)
+# plot(simulationOutput_giant1_c)
+# 
+# summary(model_giant1_c)
+# 
+# sigma_re_giant1_c <- sqrt(as.numeric(glmmTMB::VarCorr(model_giant1_c)$cond$site))
+# em1 <- ref_grid(model_giant1_c, at = list(urchins_d = seq(0, 1000, length.out = 100)))
+# 
+# giantkelp1_c <- as.data.frame(emmip(em1, ~urchins_d, type = "response", CIs = TRUE, plot = FALSE, adjust.bias = TRUE, sigma = sigma_re_giant1_c))
+# 
+# plotdata <- do.call("rbind", list(
+#   rename(mutate(giantkelp1_c, x = urchins_d))))
+# 
+# plot1_c <- plotdata |>
+#   ggplot(aes(x, yvar)) +
+#   geom_ribbon(aes(ymin = LCL, ymax = UCL), fill = "darkorchid4", alpha = 0.5) +
+#   geom_line(color = "darkorchid4") +
+#   theme_minimal()  +
+#   theme(
+#     panel.border = element_rect(fill = NA),
+#     legend.position = "bottom",
+#     strip.placement = "outside",
+#     panel.grid.major = element_blank(),
+#     panel.grid.minor = element_blank()) +
+#   ylab("Giant Kelp") +
+#   xlab("Urchins")
+# 
+# plot1_c
 
-simulationOutput_giant1_c <- simulateResiduals(model_giant1_c, plot = F)
-plot(simulationOutput_giant1_c)
 
-summary(model_giant1_c)
-
-em1 <- ref_grid(model_giant1_c, at = list(urchins_d = seq(0, 1000, length.out = 100)))
-
-giantkelp1_c <- as.data.frame(emmip(em1, ~urchins_d, type = "response", CIs = TRUE, plot = FALSE))
-
-plotdata <- do.call("rbind", list(
-  rename(mutate(giantkelp1_c, x = urchins_d))))
-
-plot1_c <- plotdata |>
-  ggplot(aes(x, yvar)) +
-  geom_ribbon(aes(ymin = LCL, ymax = UCL), fill = "darkorchid4", alpha = 0.5) +
-  geom_line(color = "darkorchid4") +
-  theme_minimal()  +
-  theme(
-    panel.border = element_rect(fill = NA),
-    legend.position = "bottom",
-    strip.placement = "outside",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()) +
-  ylab("Giant Kelp") +
-  xlab("Urchins")
-
-plot1_c
-
-
-# Giant kelp and predators correlation
+# Indirect trophic cascade: 
+## Giant kelp and predators correlation
 model_giant2 <- glmmTMB(
   MACPYRAD_d ~ SPUL_d + PANINT_d +
     (1 | site), 
@@ -184,7 +187,7 @@ model_giant2b <- glmmTMB(
 ) 
 
 AIC(model_giant2, model_giant2b) # 2b has the lower AIC, but I don't think it makes sense
-# to have a quadratic here... I think the simplist hypothesis is just a + relationship 
+# to have a quadratic here... I think the simplest hypothesis is just a + relationship 
 
 simulationOutput_giant2 <- simulateResiduals(model_giant2, plot = F)
 plot(simulationOutput_giant2)
@@ -192,14 +195,22 @@ plot(simulationOutput_giant2)
 simulationOutput_giant2_ar1 <- simulateResiduals(model_giant2_ar1, plot = F)
 plot(simulationOutput_giant2_ar1)
 
+
+simulationOutput_giant2b <- simulateResiduals(model_giant2b, plot = F)
+plot(simulationOutput_giant2b)
+
 summary(model_giant2)
+summary(model_giant2b)
 summary(model_giant2_ar1) # Does not change the interpretation of these relationships 
 
+sigma_re_giant2 <- sqrt(as.numeric(glmmTMB::VarCorr(model_giant2)$cond$site))
 em1 <- ref_grid(model_giant2, at = list(SPUL_d = seq(0, 12, length.out = 100)))
-sheephead1 <- as.data.frame(emmip(em1, ~SPUL_d, type = "response", CIs = TRUE, plot = FALSE))
+sheephead1 <- as.data.frame(emmip(em1, ~SPUL_d, type = "response", CIs = TRUE, plot = FALSE, 
+                                  adjust.bias = T, sigma = sigma_re_giant2))
 
 em1 <- ref_grid(model_giant2, at = list(PANINT_d = seq(0, 12, length.out = 100)))
-lobster1 <- as.data.frame(emmip(em1, ~PANINT_d, type = "response", CIs = TRUE, plot = FALSE))
+lobster1 <- as.data.frame(emmip(em1, ~PANINT_d, type = "response", CIs = TRUE, plot = FALSE,
+                                adjust.bias = T, sigma = sigma_re_giant2))
 
 plotdata2 <- do.call("rbind", list(
   rename(mutate(sheephead1, model = "random intercepts", species = "Sheephead"), x = SPUL_d),
@@ -230,7 +241,7 @@ plot2 <- plotdata_x |>
 
 plot2
 
-# Urchins as predicted by predators
+## Urchins as predicted by predators
 model_pp <- glmmTMB(
   urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
     offset(log(n_transects)) + 
@@ -254,21 +265,25 @@ simulationOutput_pp2 <- simulateResiduals(model_pp2, plot = F)
 plot(simulationOutput_pp2) 
 
 # Test random slopes 
-model_pp3 <- glmmTMB(
-  urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
-    offset(log(n_transects)) + 
-    (1 + year_fct | site), 
-  data = glm_data_south, family = nbinom1(link = "log")
-) # convergence issues 
+# model_pp3 <- glmmTMB(
+#   urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
+#     offset(log(n_transects)) + 
+#     (1 + year_fct | site), 
+#   data = glm_data_south, family = nbinom1(link = "log")) 
+# convergence issues 
 
 
+# Extract standard deviation of random effect
+sigma_re <- sqrt(as.numeric(glmmTMB::VarCorr(model_pp)$cond$site))
+
+# Calculate estimated marginal means 
 em1 <- ref_grid(model_pp, at = list(SPUL_d = seq(0, 12, length.out = 100)), offset = log(1))
 
-sheephead1 <- as.data.frame(emmip(em1, ~SPUL_d, type = "response", CIs = TRUE, plot = FALSE))
+sheephead1 <- as.data.frame(emmip(em1, ~SPUL_d, type = "response", CIs = TRUE, plot = FALSE, bias.adjust = TRUE, sigma = sigma_re))
 
 em1 <- ref_grid(model_pp, at = list(PANINT_d = seq(0, 12, length.out = 100)), offset = log(1))
 
-lobster1 <- as.data.frame(emmip(em1, ~PANINT_d, type = "response", CIs = TRUE, plot = FALSE))
+lobster1 <- as.data.frame(emmip(em1, ~PANINT_d, type = "response", CIs = TRUE, plot = FALSE, bias.adjust = TRUE, sigma = sigma_re))
 
 plotdata3 <- do.call("rbind", list(
   rename(mutate(sheephead1, model = "random intercepts", species = "Sheephead"), x = SPUL_d),
@@ -299,7 +314,30 @@ plot3 <- plotdata_3 |>
 
 plot3
 
+### Reporting relationships
 
+# Number of giant kelp when there are no urchins
+plotdata %>% filter(x == 0)
+plotdata %>% filter(abs(x) == x[which.min(abs(x - median(glm_data_south$urchins_d)))])
+
+# Number of urchins when there are 5 lobsters or sheephead when other predator is held constant 
+plotdata3 %>% filter(species == "Lobsters", x == 0)
+plotdata3 %>% filter(species == "Sheephead", x == 0)
+
+plotdata3 %>% filter(species == "Lobsters", abs(x) == x[which.min(abs(x - 5))])
+plotdata3 %>% filter(species == "Sheephead", abs(x) == x[which.min(abs(x - 5))])
+
+# Number of giant kelp when lobsters are at 0 and 5, and sheephead is held constant at mean
+plotdata2 %>% filter(species == "Lobsters", x == 0)
+plotdata2 %>% filter(species == "Lobsters", abs(x) == x[which.min(abs(x - 5))])
+
+### Double checking urchin model
+mean((glm_data_south$urchin_total/glm_data_south$n_transects)[glm_data_south$PANINT_d == 0])
+
+glm_data_south$urchin_fit <- predict(model_pp, type = "response")
+mean((glm_data_south$urchin_fit/glm_data_south$n_transects)[glm_data_south$PANINT_d == 0])
+
+##### Plottting #####
 library(cowplot)
 plot_raw <- plot_grid(plot1_s, plot3, plot2, nrow = 3, labels = "AUTO")
 
@@ -355,113 +393,4 @@ png(filename = "Figures/Residuals_predators_v_kelp.png",
     res = 600)
 plot(simulationOutput_giant2)
 dev.off()
-
-##### More modeling details 
-##### GLMM Predator Prey models ################################################
-fish_data <- glm_data_south %>% 
-  na.omit(urchins_d) %>% 
-  na.omit(SPUL_d)
-
-# Random intercepts with quadratics
-model_tc1 <- glmmTMB(
-  urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
-    offset(log(n_transects)) + 
-    (1 | site), 
-  data = fish_data, family = nbinom1(link = "log")
-) # Between nbinom1, nbinom2, and poisson. nbinom1 gives the best residuals
-
-simulationOutput_m1 <- simulateResiduals(model_tc1, plot = F)
-plot(simulationOutput_m1)
-
-
-# Random intercepts without quadratics
-model_tc1_1 <- glmmTMB(
-  urchin_total ~ SPUL_d + PANINT_d + 
-    offset(log(n_transects)) + 
-    (1 | site), 
-  data = fish_data, family = nbinom1(link = "log")
-) 
-simulationOutput_m1_1 <- simulateResiduals(model_tc1_1, plot = F)
-plot(simulationOutput_m1_1) 
-
-# # random intercepts and sloeps 
-# model_tc1 <- glmmTMB(
-#   urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
-#     offset(log(n_transects)) + 
-#     (year_fct | site_name), 
-#   data = fish_data, family = nbinom1(link = "log")
-# ) # convergence issues
-
-# Random intercepts and autocorrelation structure quadratics
-model_tc2 <- glmmTMB(
-  urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + offset(log(n_transects)) +
-    (1 | site) + 
-    ar1(0 + year_fct | site),
-  data = fish_data, family = nbinom1(link = "log")
-)
-
-simulationOutput_m2 <- simulateResiduals(model_tc2, plot = F)
-plot(simulationOutput_m2)
-
-# Random intercepts and autocorrelation structure without quadratics 
-model_tc2_2 <- glmmTMB(
-  urchin_total ~ SPUL_d + PANINT_d + offset(log(n_transects)) +
-    (1 | site) + 
-    ar1(0 + year_fct | site),
-  data = fish_data, family = nbinom1(link = "log")
-)
-
-simulationOutput_m2_2 <- simulateResiduals(model_tc2_2, plot = F)
-plot(simulationOutput_m2_2)
-
-simulationOutput_m1 <- simulateResiduals(model_tc1, plot = F)
-plot(simulationOutput_m1)
-
-simulationOutput_m1_1 <- simulateResiduals(model_tc1_1, plot = F)
-plot(simulationOutput_m1_1) 
-
-simulationOutput_m2 <- simulateResiduals(model_tc2, plot = F)
-plot(simulationOutput_m2) # Rsiduals are bad 
-
-simulationOutput_m2_1 <- simulateResiduals(model_tc2_2, plot = F)
-plot(simulationOutput_m2_1) # Residuals are bad 
-
-car::Anova(model_tc1) # Chosen model
-summary(model_tc1)
-
-##### Autocorrelation #########################################################
-
-## Obtain residuals, pivot to wide data frame
-resid_ts <- fish_data |>
-  mutate(resid = resid(model_tc1)) |>
-  dplyr::select(site, year, resid) |>
-  pivot_wider(names_from = "site", values_from = "resid")
-
-## Compute normal ACF (partial ACF was giving some weird results)
-## Not a problem for AR1 because PACF = ACF at lag 1
-acf_df <- bind_rows(apply(
-  ts(resid_ts[,-1]), MARGIN = 2,
-  \(x) data.frame(lag = 0:5, acf = as.numeric(acf(x, na.action = na.pass, lag.max = 5, plot = FALSE)$acf))),
-  .id = "site"
-)
-
-## Plot ACF
-## Suggests very little autocorrelation, on average
-violin_plot <- acf_df |>
-  filter(lag > 0) |>
-  mutate(lag = factor(lag)) |>
-  #left_join(data %>% group_by(site = site_name) %>% tally(), by = "site") %>%
-  ggplot(aes(lag, acf)) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  #geom_violin(scale = "width", alpha = 0.4) +
-  geom_violin() +
-  geom_jitter(width = 0.2) +
-  geom_smooth() +
-  theme_bw()
-
-## Summary of average autocorrelation
-acf_df |> group_by(lag) |> summarize(acf = mean(acf, na.rm = TRUE))
-
-# Suggests little autocorrelation
-
 

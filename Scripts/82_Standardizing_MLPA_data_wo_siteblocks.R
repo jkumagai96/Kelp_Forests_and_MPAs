@@ -3,7 +3,7 @@
 # Purpose: Prepare the MLPA data for analysis without site blocks
 # BIO 202: Ecological Statistics
 
-###### Set up ##################################################################
+###### Set up ##
 # Load Packages
 library(tidyverse)
 
