@@ -94,7 +94,8 @@ data <- kelp_data_all %>%
   rename(temp = temperature, 
          MHW = MHW_intensity, 
          CS = CS_intensity, 
-         gravity = log_gravity)
+         gravity = log_gravity) #%>% 
+  #select(-CS)
 
 data.pca <- prcomp(data[,-c(1,2,3)], center = TRUE, scale = TRUE)
 summary(data.pca)

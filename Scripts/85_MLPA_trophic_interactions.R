@@ -74,12 +74,6 @@ model_giant1_s <- glmmTMB(
   data = glm_data_south, family = tweedie(link = "log")
 ) 
 
-# model_giant1_s <- glmmTMB(
-#   MACPYRAD_d ~ poly(urchins_d, 2) +
-#     (1 + year_fct | site), 
-#   data = glm_data_south, family = tweedie(link = "log")
-# )
-# Convergence issues 
 
 model_giant1_s_ar1 <- glmmTMB(
   MACPYRAD_d ~ poly(urchins_d, 2) +
@@ -174,12 +168,6 @@ model_giant2_ar1 <- glmmTMB(
   data = glm_data_south, family = tweedie(link = "log")
 ) 
 
-# model_giant2 <- glmmTMB(
-#   MACPYRAD_d ~ SPUL_d + PANINT_d +
-#     (1 + year_fct | site), 
-#   data = glm_data_south, family = tweedie(link = "log")
-# ) # Convergence issues 
-
 model_giant2b <- glmmTMB(
   MACPYRAD_d ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) +
     (1 | site), 
@@ -264,15 +252,6 @@ model_pp2 <- glmmTMB(
 simulationOutput_pp2 <- simulateResiduals(model_pp2, plot = F)
 plot(simulationOutput_pp2) 
 
-# Test random slopes 
-# model_pp3 <- glmmTMB(
-#   urchin_total ~ poly(SPUL_d, 2) + poly(PANINT_d, 2) + 
-#     offset(log(n_transects)) + 
-#     (1 + year_fct | site), 
-#   data = glm_data_south, family = nbinom1(link = "log")) 
-# convergence issues 
-
-
 # Extract standard deviation of random effect
 sigma_re <- sqrt(as.numeric(glmmTMB::VarCorr(model_pp)$cond$site))
 
@@ -350,7 +329,7 @@ plot_final <- ggdraw() +
   draw_image(kelp_sheephead, x = 0.12, y = -0.35, scale = 0.11) + # giant kelp vs. sheephead 
   annotate("text", x = 0.86, y = 0.96, label = "p < 0.0001; p = 0.1", fontface = "bold") +
   annotate("text", x = 0.39, y = 0.63, label = "p < 0.0001; p < 0.0001", fontface = "bold") +
-  annotate("text", x = 0.85, y = 0.63, label = "p < 0.0001; p = 0.059", fontface = "bold") +
+  annotate("text", x = 0.85, y = 0.63, label = "p < 0.001; p = 0.059", fontface = "bold") +
   annotate("text", x = 0.43, y = 0.3, label = "p < 0.0001", fontface = "bold") +
   annotate("text", x = 0.92, y = 0.3, label = "p = 0.8")
 

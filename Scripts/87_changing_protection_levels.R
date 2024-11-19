@@ -1,4 +1,4 @@
-# Date: August 2nd 2024
+# Date: Nov. 11th 2024
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Visualizing MLPA data (abundance graphs)
 # BIO 202: Ecological Statistics
@@ -57,7 +57,6 @@ data <- data %>% left_join(sites_w_protection_status, by = join_by(site, region)
 # Remove NA values
 inverts_data <- data %>% filter(!is.na(urchin_total))
 fish_data <- data %>% filter(!is.na(biomass_d))
-
 
 ##### Urchins through time #####################################################
 Urchins_per_region <- inverts_data %>% 
@@ -293,16 +292,19 @@ library(emmeans)
 library(DHARMa)
 
 
-# format data
-fish_post2012 <- fish_data %>% 
+# format data, start from data because it will be treated the same as script 86
+fish_post2012 <- data %>% 
   filter(region == "South_Coast") %>% 
   filter(year >= 2012) %>% 
-  mutate(year_fct = as.factor(year)) %>% 
+  mutate(year_fct = as.factor(year),
+         year_std = (year - 2017)/sd(year)) %>% 
   mutate(Sheephead_protected = factor(Sheephead_protected, levels = c("Unprotected", "Partial", "Full"))) 
-inverts_post2012 <- fish_data %>% 
+
+inverts_post2012 <- data %>% 
   filter(region == "South_Coast") %>% 
   filter(year >= 2012) %>% 
-  mutate(year_fct = as.factor(year)) %>% 
+  mutate(year_fct = as.factor(year),
+         year_std = (year - 2017)/sd(year)) %>% 
   mutate(Lobster_protected = factor(Lobster_protected, levels = c("Unprotected", "Partial", "Full")))
 
 
@@ -321,13 +323,12 @@ plot(simulationOutput_sheephead)
 car::Anova(model_sheephead)
 plot(emmeans(model_sheephead, specs = pairwise ~ Sheephead_protected, type = "response"))
 summary(model_sheephead)
-emmeans(model_sheephead, specs = pairwise ~ Sheephead_protected, type = "response")
 
 # sheephead biomass
 model_biomass <- glmmTMB(
   biomass_d ~ Sheephead_protected + 
-    (1 | site) + # random intercept 
-    ar1(0 + year_fct | site), # autoregressive function 
+    (1 + year_std | site) + 
+    ar1(0 + year_fct | site),
   data = fish_post2012, family = tweedie(link = "log")
 )
 
@@ -337,13 +338,12 @@ plot(simulationOutput_biomass)
 
 car::Anova(model_biomass)
 plot(emmeans(model_biomass, specs = pairwise ~ Sheephead_protected, type = "response"))
-emmeans(model_biomass, specs = pairwise ~ Sheephead_protected, type = "response")
-
+summary(model_biomass)
 
 # lobsters
 model_lobsters <- glmmTMB(
   PANINT_d ~ Lobster_protected + 
-    (1 | site) + # random intercept 
+    (1 + year_std | site) + # random intercept 
     ar1(0 + year_fct | site), # autoregressive function 
   data = inverts_post2012, family = tweedie(link = "log")
 )
@@ -354,6 +354,5 @@ plot(simulationOutput_lobsters)
 
 car::Anova(model_lobsters)
 plot(emmeans(model_lobsters, specs = pairwise ~ Lobster_protected, type = "response"))
-emmeans(model_lobsters, specs = pairwise ~ Lobster_protected, type = "response")
-
+summary(model_lobsters)
 

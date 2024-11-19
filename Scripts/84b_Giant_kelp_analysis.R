@@ -1,4 +1,4 @@
-# Date: August 5th 2024
+# Date: Nov. 6th 2024
 # Author: Joy Kumagai (kumagaij@stanford.edu) 
 # Purpose: Conduct statistical analysis if giant kelp abundances are higher during and 
 #          after the heatwave in protected areas
@@ -25,6 +25,7 @@ data_all <- data_all %>%
     heatwave = factor(heatwave, levels = c("before", "during", "after")), 
     site_name = factor(site), 
     year_fct = factor(year),
+    year_std = (year - 2013)/sd(year),
     mpa_status = factor(mpa_status, levels = c("Unprotected", "Partial", "Full"))
   )
 
@@ -75,7 +76,7 @@ plot(sim_output1)
 # Model 2 - random slopes and intercepts
 m2_kelp_s <- glmmTMB(
   kelp_d ~ heatwave*mpa_status +
-    (1 + year | site_name),
+    (1 + year_std | site_name),
   data = south_df,
   family = tweedie(link = "log")
 )
@@ -88,7 +89,7 @@ plot(sim_output2)
 # Model 3 - random slopes and intercepts and ar1
 m3_kelp_s <- glmmTMB(
   kelp_d ~ heatwave*mpa_status +
-    (1 + year| site_name) +
+    (1 + year_std | site_name) +
     ar1(0 + year_fct | site_name),
   data = south_df,
   family = tweedie(link = "log")
@@ -96,27 +97,33 @@ m3_kelp_s <- glmmTMB(
 m3_kelp_s
 
 sim_output3 <- simulateResiduals(m3_kelp_s, plot = F)
-plot(sim_output3) # Fit is bad with and without random slopes 
+plot(sim_output3) # Fit is much worse, removed from consideration
 
+# Model 4 - random intercepts and ar1
+m4_kelp_s <- glmmTMB(
+  kelp_d ~ heatwave*mpa_status +
+    (1 | site_name) +
+    ar1(0 + year_fct | site_name),
+  data = south_df,
+  family = tweedie(link = "log")
+)
+m4_kelp_s # seems that the random intercepts are now not doing much that the AR1 is (low std.dev. value)
+sim_output4 <- simulateResiduals(m4_kelp_s, plot = F)
+plot(sim_output4) # Fit is worse than models 2 and 1 
+
+### Model Comparison for Southern California kelp
 AIC(m1_kelp_s, m2_kelp_s)
-# Model 2 is chosen as no convergence issues, the residuals look the same and it is the 
-# more conservative model, plus the AIC is lower!
 
-summary(m1_kelp_s)
+# When we remove models 3 and 4 as an option due to bad fit, 
+# Model 2 is chosen as no convergence issues, the residuals look the same and AIC is lower 
+car::Anova(m1_kelp_s)
+car::Anova(m2_kelp_s)
+
 summary(m2_kelp_s)
 
-car::Anova(m2_kelp_s)
-z <- emmeans::emmeans(m1_kelp_s, pairwise ~ mpa_status | heatwave, type = "response")
-z
 
-write.csv(broom::tidy(z$emmeans),
-          "Processed_data/data_tables/emmeans_kelp2_south.csv",
-          row.names = F)
-write.csv(broom::tidy(z$contrasts),
-          "Processed_data/data_tables/contrasts_kelp2_south.csv",
-          row.names = F)
-
-# Model 4 - random intercepts
+### Central California 
+# Random interecepts
 m1_kelp_c <- glmmTMB(
   kelp_d ~ heatwave*mpa_status +
     (1 | site_name),
@@ -128,10 +135,10 @@ m1_kelp_c
 sim_output4 <- simulateResiduals(m1_kelp_c, plot = F)
 plot(sim_output4)  
 
-# Model 5 - random slopes and intercepts
+# Random slopes and intercepts
 m2_kelp_c <- glmmTMB(
   kelp_d ~ heatwave*mpa_status +
-    (1 + year| site_name),
+    (1 + year_std | site_name),
   data = central_df,
   family = tweedie(link = "log")
 )
@@ -141,47 +148,106 @@ sim_output5 <- simulateResiduals(m2_kelp_c, plot = F)
 plot(sim_output5)  
 
 
-# Model 6 - random slopes and intercepts and ar1
+# Random slopes and intercepts and ar1
 m3_kelp_c <- glmmTMB(
   kelp_d ~ heatwave*mpa_status +
-    (1 + year| site_name) +
+    (1 + year_std | site_name) +
     ar1(0 + year_fct | site_name),
   data = central_df,
   family = tweedie(link = "log")
 )
-m3_kelp_c # Convergence issues 
+m3_kelp_c # No longer Convergence issues 
 
-summary(m1_kelp_c)
-summary(m2_kelp_c)
+sim_output6 <- simulateResiduals(m3_kelp_c, plot = F)
+plot(sim_output6) # Better residuals actually 
 
-AIC(m1_kelp_c, m2_kelp_c) # Model 5 (m2_kelp_c) is chosen
+# Random intercepts and ar1
+m4_kelp_c <- glmmTMB(
+  kelp_d ~ heatwave*mpa_status +
+    (1 + year_std | site_name),
+  data = central_df,
+  family = tweedie(link = "log")
+)
+m4_kelp_c # No longer Convergence issues 
 
-# There is less kelp after the heatwave! Across all protection status, there was less kelp 
-# after the heatwave in Central California
+sim_output7 <- simulateResiduals(m4_kelp_c, plot = F)
+plot(sim_output7) # slighlty worse residuals
+
+### Model comparison for central california kelp
+AIC(m1_kelp_c, m2_kelp_c, m3_kelp_c, m4_kelp_c) # Model 3, m3_kelp_c is best 
+
+# Best residuals, lowest AIC, 
+
+car::Anova(m1_kelp_c)
 car::Anova(m2_kelp_c)
-summary(m2_kelp_c)
-emmeans(m2_kelp_c, ~ heatwave, type = "response") 
+car::Anova(m3_kelp_c)
+car::Anova(m4_kelp_c)
 
-z2 <- emmeans::emmeans(m2_kelp_c, pairwise ~ mpa_status | heatwave, type = "response")
-z2
+summary(m3_kelp_c)
 
-write.csv(broom::tidy(z2$emmeans), 
+##### Bias correction ##########################################################
+# Mean standardized years corresponding to heatwave times
+hw_yrs <- aggregate(data_all$year_std, by = list(data_all$heatwave), mean)[,2]
+
+# Extract covariance matrices of random effects
+sigma_re_s <- glmmTMB::VarCorr(m2_kelp_s)$cond$site_name
+sigma_re_c <- glmmTMB::VarCorr(m3_kelp_c)$cond$site_name
+
+# Compute total random effects standard deviation at each time point
+sigma_re_s <- sapply(hw_yrs, \(t) sqrt(sum(c(1, t) * sigma_re_s %*% c(1, t))))
+sigma_re_c <- sapply(hw_yrs, \(t) sqrt(sum(c(1, t) * sigma_re_c %*% c(1, t))))
+
+# Compute bias-corrected estimated marginal means for SoCal model
+ems <- ref_grid(m2_kelp_s, at = list(heatwave = levels(data_all$heatwave), mpa_status = levels(data_all$mpa_status)))
+ems <- as.data.frame(emmip(
+  ems, ~ heatwave + mpa_status, type = "response", CIs = TRUE, plot = FALSE, 
+  bias.adjust = TRUE, sigma = rep(sigma_re_s, 3)
+))
+
+# Compute bias-corrected estimated marginal means for CenCal model
+emc <- ref_grid(m3_kelp_c, at = list(heatwave = levels(data_all$heatwave), mpa_status = levels(data_all$mpa_status)))
+emc <- as.data.frame(emmip(
+  emc, ~ heatwave + mpa_status, type = "response", CIs = TRUE, plot = FALSE, 
+  bias.adjust = TRUE, sigma = rep(sigma_re_c, 3)
+))
+
+# Join
+em <- bind_rows(list(Southern = ems, Central = emc), .id = "region")
+
+### Export of estimated marginal means 
+kelpmeans_s <- emmeans::emmeans(m2_kelp_s, pairwise ~ mpa_status | heatwave, type = "response",
+                      bias.adj = TRUE, sigma = rep(sigma_re_s, each = 3))
+kelpmeans_s
+
+write.csv(broom::tidy(kelpmeans_s$emmeans),
+          "Processed_data/data_tables/emmeans_kelp2_south.csv",
+          row.names = F)
+write.csv(broom::tidy(kelpmeans_s$contrasts),
+          "Processed_data/data_tables/contrasts_kelp2_south.csv",
+          row.names = F)
+
+
+# There is less kelp after the heatwave in Central California
+
+kelpmeans_c <- emmeans::emmeans(m3_kelp_c, pairwise ~ mpa_status | heatwave, type = "response",
+                                bias.adj = TRUE, sigma = rep(sigma_re_c, each = 3))
+kelpmeans_c
+
+emmeans::emmeans(m3_kelp_c, pairwise ~ heatwave, type = "response",
+                bias.adj = TRUE, sigma = sigma_re_c)
+
+write.csv(broom::tidy(kelpmeans_c$emmeans), 
           "Processed_data/data_tables/emmeans_kelp2_central_new.csv", row.names = F)
-write.csv(broom::tidy(z2$contrasts), 
+write.csv(broom::tidy(kelpmeans_c$contrasts), 
           "Processed_data/data_tables/contrasts_kelp2_central_new.csv", 
           row.names = F)
-##### Figures ##################################################################
-is_data <- as.data.frame(emmeans::emmeans(m2_kelp_s, "heatwave", by = "mpa_status", type = "response")) %>%
-  mutate(region = "Southern")
-ic_data <- as.data.frame(emmeans::emmeans(m2_kelp_c, "heatwave", by = "mpa_status", type = "response")) %>%
-  mutate(region = "Central") 
-interaction_data <- rbind(is_data, ic_data)
 
+##### Figures ##################################################################
 group.colors <- c(Full = "#440154", Unprotected = "#FFBA00", Partial ="#21918c")
 
-interaction_plot <- interaction_data %>%
+interaction_plot <- em %>%
   ggplot(aes(heatwave, color = mpa_status)) +
-  geom_pointrange(aes(y = response/60, ymin = asymp.LCL/60, ymax = asymp.UCL/60),
+  geom_pointrange(aes(y = yvar/60, ymin = LCL/60, ymax = UCL/60),
                   position = position_dodge(width = 0.2),
                   linewidth = 1) +
   facet_grid(cols = vars(region)) +
@@ -241,7 +307,7 @@ png(filename = "Figures/Residuals_kelp2_central.png",
     height = 5,
     units = "in", 
     res = 600)
-plot(sim_output5) 
+plot(sim_output6) 
 dev.off()
 
 png(filename = "Figures/Residuals_kelp2_south.png", 
