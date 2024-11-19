@@ -1,0 +1,13 @@
+---Nur Arafeh Dalmau---
+
+Filtered MPA dataset from NOAA, 2020 version with ArcMap. I filtered the data for the region 
+where giant kelp forests are the dominant kelp species in California. USA/MEX border to lattitude 37.4.
+
+Categorized MPAs in two types: Full protection (recreational and commercial fishing prohibited). 
+Partial protection (some restrictions apply to recreational and commercial fishing).
+
+I errased Sanctuaries.
+
+I ensured that MPAs establsiehd during California MLPA, if they overlayed with older MPAs, that they kept 
+the oldest year of implementation.
+
